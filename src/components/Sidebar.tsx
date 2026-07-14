@@ -6,10 +6,12 @@ import {
   Settings
 } from "lucide-react";
 
+import { CafeBrand } from "./CafeBrand";
+
 export function Sidebar() {
   return (
     <aside className="sidebar">
-      <div className="sidebar__brand">BaristaOS</div>
+      <CafeBrand />
 
       <nav className="sidebar__nav">
         <button className="nav-item nav-item--active">

@@ -613,6 +613,7 @@ h1, h2, h3 { letter-spacing: -0.045em; }
   .rush-layout { grid-template-columns: minmax(0, 1fr) 340px; }
   .rush-toolbar { grid-template-columns: 150px 1fr; }
   .rush-toolbar > .button { display: none; }
+  
   .cafe-brand {
     align-items: center;
     margin-inline: 0;

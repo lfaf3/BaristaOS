@@ -1,20 +1,2 @@
-import { Navigate, Route, Routes } from "react-router-dom";
-import { LoginPage } from "../pages/LoginPage";
-import { OpenCashPage } from "../pages/OpenCashPage";
-import { TablesPage } from "../pages/TablesPage";
-import { RushPage } from "../pages/RushPage";
-import { AppProvider } from "./AppContext";
-
-export function App() {
-  return (
-    <AppProvider>
-      <Routes>
-        <Route path="/" element={<Navigate to="/login" replace />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/abrir-caixa" element={<OpenCashPage />} />
-        <Route path="/mesas" element={<TablesPage />} />
-        <Route path="/venda" element={<RushPage />} />
-      </Routes>
-    </AppProvider>
-  );
-}
+import {Navigate,Route,Routes} from "react-router-dom";import {GuestRoute} from "../components/auth/GuestRoute";import {ProtectedRoute} from "../components/auth/ProtectedRoute";import {LoginPage} from "../pages/LoginPage";import {OpenCashPage} from "../pages/OpenCashPage";import {RushPage} from "../pages/RushPage";import {TablesPage} from "../pages/TablesPage";import {AppProvider} from "./AppContext";import {AuthProvider} from "./AuthContext";
+export function App(){return <AuthProvider><AppProvider><Routes><Route element={<GuestRoute/>}><Route path="/login" element={<LoginPage/>}/></Route><Route element={<ProtectedRoute/>}><Route path="/abrir-caixa" element={<OpenCashPage/>}/><Route path="/mesas" element={<TablesPage/>}/><Route path="/venda" element={<RushPage/>}/></Route><Route path="/" element={<Navigate to="/login" replace/>}/><Route path="*" element={<Navigate to="/" replace/>}/></Routes></AppProvider></AuthProvider>}

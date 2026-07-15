@@ -1,90 +1,36 @@
-# BaristaOS React v1.0
+# BaristaOS — Sprint 3 / Release 3.1
 
-Primeira base oficial do frontend do BaristaOS.
+Pacote de atualização do frontend atual. Preserva o branding e a interface.
 
-## Tecnologias
+## Instalação
 
-- React
-- TypeScript
-- Vite
-- React Router
-- Lucide Icons
-- CSS com tokens do Barista Design System
-
-## Fluxos implementados
-
-- Login
-- Abertura de caixa
-- Mapa de mesas
-- Venda de balcão
-- Modo Rush
-- Categorias
-- Pesquisa por nome, código, categoria e apelido
-- Carrinho
-- Alteração de quantidades
-- Pagamento em dinheiro, PIX e TEF simulado
-- Comprovante
-- Liberação da mesa após a venda
-
-## Como executar no Windows
-
-1. Instale o Node.js LTS.
-2. Extraia o ZIP.
-3. Abra a pasta no Visual Studio Code.
-4. Abra o terminal integrado.
-5. Execute:
-
+1. Crie a branch:
 ```bash
-npm install
-npm run dev
+git checkout -b feat/sprint-3-release-3-1
 ```
-
-6. O navegador abrirá em:
-
-```text
-http://localhost:5173
-```
-
-## Gerar uma versão de produção
-
+2. Copie os arquivos deste pacote para o frontend, respeitando as pastas. `App.tsx`, `Topbar.tsx` e `LoginPage.tsx` substituem os atuais.
+3. Instale Axios:
 ```bash
-npm run build
+npm install axios
 ```
+4. Copie `.env.example` para `.env`.
+5. Copie `src/styles.release-3.1.css` para o final de `src/styles/global.css`.
+6. Reinicie o Vite.
 
-Os arquivos serão criados na pasta `dist`.
+## Execução
+Backend: `npm run dev` na porta 3333.
+Frontend: `npm run dev` na porta 5173.
 
-## Estrutura principal
+## Credenciais
+`admin@dmcaffe.com.br` / `BaristaOS@123`
 
-```text
-src/
-├── app/
-│   ├── App.tsx
-│   └── AppContext.tsx
-├── components/
-├── data/
-├── pages/
-├── styles/
-├── types/
-└── utils/
-```
+## Validação
+- Login válido redireciona para `/abrir-caixa`.
+- Login inválido mostra erro amigável.
+- Atualizar a página mantém a sessão.
+- `/mesas` sem sessão redireciona para login.
+- Logout revoga o refresh token e limpa `baristaos.*` do Local Storage.
+- Para testar refresh, invalide apenas `baristaos.access_token` e recarregue uma rota protegida.
 
-## Atalhos do Modo Rush
-
-- F2: pesquisar
-- F4: voltar para mesas
-- F9: finalizar venda
-- ESC: fechar pagamento ou voltar
-- Enter na pesquisa: adiciona o primeiro resultado
-
-## Limitações atuais
-
-Esta versão é somente frontend demonstrativo. Ainda não possui:
-
-- Backend
-- Banco de dados
-- Login real
-- Persistência
-- TEF real
-- NFC-e
-- Impressão térmica integrada
-- Operação offline real
+## Segurança
+Nesta etapa os tokens ficam no Local Storage. Antes da versão comercial pública, o refresh token deverá migrar para cookie HttpOnly/Secure.

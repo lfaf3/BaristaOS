@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: baristaos-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: baristaos
+      POSTGRES_USER: baristaos
+      POSTGRES_PASSWORD: baristaos_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - baristaos_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U baristaos -d baristaos"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  baristaos_postgres_data:

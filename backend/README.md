@@ -1,4 +1,4 @@
-# BaristaOS API — Sprint 1
+# BaristaOS API — Sprint 2
 
 ## Conteúdo
 Fastify, TypeScript, PostgreSQL, Prisma 7, autenticação JWT, refresh token,
@@ -54,3 +54,23 @@ API: `http://localhost:3333`
 
 ## Próxima sprint
 Categorias, produtos, mesas e abertura/fechamento de caixa.
+
+
+## Endpoints da Sprint 2
+
+```text
+GET    /api/v1/categories
+POST   /api/v1/categories
+GET    /api/v1/products?q=cap&favorites=true
+GET    /api/v1/products/:id
+POST   /api/v1/products
+PATCH  /api/v1/products/:id
+GET    /api/v1/tables
+GET    /api/v1/tables/:id
+PATCH  /api/v1/tables/:id/status
+GET    /api/v1/cash/current
+POST   /api/v1/cash/open
+POST   /api/v1/cash/close
+```
+
+Todas essas rotas exigem `Authorization: Bearer ACCESS_TOKEN`.

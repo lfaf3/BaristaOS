@@ -163,6 +163,7 @@ CREATE TABLE "orders" (
     "cash_session_id" UUID NOT NULL,
     "operator_id" UUID NOT NULL,
     "status" "OrderStatus" NOT NULL DEFAULT 'OPEN',
+    "guest_count" INTEGER NOT NULL DEFAULT 0,
     "subtotal" DECIMAL(12,2) NOT NULL DEFAULT 0,
     "discount" DECIMAL(12,2) NOT NULL DEFAULT 0,
     "total" DECIMAL(12,2) NOT NULL DEFAULT 0,

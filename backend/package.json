@@ -1,8 +1,8 @@
 {
   "name": "@baristaos/api",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
-  "description": "API do BaristaOS — Sprint 1",
+  "description": "API do BaristaOS — Sprint 2",
   "type": "module",
   "engines": {
     "node": ">=22.0.0"

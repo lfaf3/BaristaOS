@@ -236,6 +236,7 @@ model Order {
   cashSessionId String      @map("cash_session_id") @db.Uuid
   operatorId    String      @map("operator_id") @db.Uuid
   status        OrderStatus @default(OPEN)
+  guestCount    Int         @default(0) @map("guest_count")
   subtotal      Decimal     @default(0) @db.Decimal(12, 2)
   discount      Decimal     @default(0) @db.Decimal(12, 2)
   total         Decimal     @default(0) @db.Decimal(12, 2)

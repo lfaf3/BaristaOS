@@ -1,0 +1,1 @@
+import {Coffee} from "lucide-react";export function FullPageLoader({label}:{label:string}){return <main className="session-loader" role="status"><div className="session-loader__mark"><Coffee size={28}/></div><strong>BaristaOS</strong><span>{label}</span></main>}

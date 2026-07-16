@@ -1,6 +1,6 @@
 export type PaymentMethod = "Dinheiro" | "PIX" | "TEF";
 
-export interface Product {
+export type Product = {
   id: number;
   code: string;
   name: string;
@@ -8,11 +8,11 @@ export interface Product {
   price: number;
   aliases: string[];
   favorite?: boolean;
-}
+};
 
-export interface CartItem extends Product {
+export type CartItem = Product & {
   quantity: number;
-}
+};
 
 export type TableStatus = "free" | "open" | "payment";
 

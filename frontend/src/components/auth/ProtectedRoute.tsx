@@ -1,0 +1,2 @@
+import {Navigate,Outlet,useLocation} from "react-router-dom";import {useAuth} from "../../app/AuthContext";import {FullPageLoader} from "../feedback/FullPageLoader";
+export function ProtectedRoute(){const{status}=useAuth();const location=useLocation();if(status==="loading")return <FullPageLoader label="Restaurando sua sessão..."/>;if(status==="anonymous")return <Navigate to="/login" replace state={{from:location.pathname}}/>;return <Outlet/>;}

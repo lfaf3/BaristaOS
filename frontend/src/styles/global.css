@@ -1,3 +1,4 @@
+/* Copie para o final de src/styles/global.css */
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
 
 :root {
@@ -650,3 +651,5 @@ h1, h2, h3 { letter-spacing: -0.045em; }
   .receipt, .receipt * { visibility: visible; }
   .receipt { position: absolute; inset: 0; border: 0; }
 }
+
+.form-error{margin:18px 0 4px;padding:12px 14px;border:1px solid rgba(198,90,70,.3);border-radius:12px;color:#8e3f31;background:rgba(198,90,70,.1);font-size:13px;line-height:1.45}.login-card input:disabled,.login-card button:disabled{cursor:wait;opacity:.68}.session-loader{min-height:100vh;display:grid;place-items:center;align-content:center;gap:10px;color:var(--espresso);background:var(--canvas)}.session-loader__mark{width:64px;height:64px;display:grid;place-items:center;border-radius:20px;color:#fff;background:var(--espresso);box-shadow:var(--shadow);animation:session-loader-pulse 1.3s ease-in-out infinite}.session-loader>strong{margin-top:4px;font-size:24px;letter-spacing:-.045em}.session-loader>span{color:var(--muted);font-size:13px}@keyframes session-loader-pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(.96);opacity:.78}}

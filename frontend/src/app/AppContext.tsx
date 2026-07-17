@@ -1,6 +1,5 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
 import type { CafeTable, CartItem, PaymentMethod, Product } from "../types";
-import { initialTables } from "../data/tables";
 
 interface AppState {
   operator: string;
@@ -28,7 +27,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [operator, setOperator] = useState("Diego");
   const [selectedTable, setSelectedTable] = useState<number | null>(null);
   const [counterSale, setCounterSale] = useState(false);
-  const [tables, setTables] = useState(initialTables);
+  const [tables, setTables] = useState<CafeTable[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("Dinheiro");
 

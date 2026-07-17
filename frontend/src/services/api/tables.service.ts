@@ -46,5 +46,14 @@ export const tablesService = {
     });
 
     return tables.map(mapTable);
+  },
+
+  async open(id: string): Promise<CafeTable> {
+    const table = await apiRequest<TableApiResponse>({
+      method: "PATCH",
+      url: `/tables/${id}/open`
+    });
+
+    return mapTable(table);
   }
 };

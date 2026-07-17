@@ -741,3 +741,25 @@ h1, h2, h3 { letter-spacing: -0.045em; }
 @keyframes icon-spin {
   to { transform: rotate(360deg); }
 }
+
+.tables-action-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+  padding: 12px 14px;
+  border: 1px solid #f0b8b8;
+  border-radius: 12px;
+  background: #fff4f4;
+  color: #8b1e1e;
+}
+
+.tables-action-error button {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}

@@ -1,11 +1,25 @@
 import type { FastifyInstance } from "fastify";
 import { AppError } from "../../shared/errors/app-error.js";
 
-function mapTable(table: {
-  id: string; number: number; name: string | null; status: string; seats: number;
-  orders: Array<{ openedAt: Date; guestCount: number; total: unknown; items: Array<{ quantity: number }> }>;
-}) {
+type TableWithOpenOrder = {
+  id: string;
+  number: number;
+  name: string | null;
+  status: string;
+  seats: number;
+  openedAt: Date | null;
+  orders: Array<{
+    openedAt: Date;
+    guestCount: number;
+    total: unknown;
+    items: Array<{ quantity: number }>;
+  }>;
+};
+
+function mapTable(table: TableWithOpenOrder) {
   const order = table.orders[0];
+  const openedAt = order?.openedAt ?? table.openedAt;
+
   return {
     id: table.id,
     number: table.number,
@@ -15,7 +29,9 @@ function mapTable(table: {
     people: order?.guestCount ?? 0,
     items: order?.items.reduce((sum, item) => sum + item.quantity, 0) ?? 0,
     total: order ? Number(order.total) : 0,
-    minutesOpen: order ? Math.max(0, Math.floor((Date.now() - order.openedAt.getTime()) / 60000)) : 0
+    minutesOpen: openedAt
+      ? Math.max(0, Math.floor((Date.now() - openedAt.getTime()) / 60000))
+      : 0
   };
 }
 
@@ -39,23 +55,86 @@ export async function listTables(app: FastifyInstance, storeId: string) {
     include: includeOpenOrder,
     orderBy: { number: "asc" }
   });
+
   return tables.map(mapTable);
 }
 
 export async function getTable(app: FastifyInstance, storeId: string, id: string) {
   const table = await app.prisma.cafeTable.findFirst({
-    where: { id, storeId, active: true }, include: includeOpenOrder
+    where: { id, storeId, active: true },
+    include: includeOpenOrder
   });
-  if (!table) throw new AppError("Mesa não encontrada.", 404, "TABLE_NOT_FOUND");
+
+  if (!table) {
+    throw new AppError("Mesa não encontrada.", 404, "TABLE_NOT_FOUND");
+  }
+
   return mapTable(table);
 }
 
-export async function setTableStatus(app: FastifyInstance, storeId: string, id: string, status: "FREE"|"OPEN"|"PAYMENT"|"BLOCKED") {
-  await getTable(app, storeId, id);
-  if (status === "FREE") {
-    const openOrder = await app.prisma.order.findFirst({ where: { storeId, tableId: id, status: "OPEN" } });
-    if (openOrder) throw new AppError("A mesa possui pedido aberto e não pode ser liberada manualmente.", 409, "TABLE_HAS_OPEN_ORDER");
+export async function openTable(app: FastifyInstance, storeId: string, id: string) {
+  const table = await app.prisma.cafeTable.findFirst({
+    where: { id, storeId, active: true },
+    select: { id: true, status: true }
+  });
+
+  if (!table) {
+    throw new AppError("Mesa não encontrada.", 404, "TABLE_NOT_FOUND");
   }
-  const table = await app.prisma.cafeTable.update({ where: { id }, data: { status } });
-  return { id: table.id, number: table.number, status: table.status };
+
+  if (table.status !== "FREE") {
+    throw new AppError(
+      "A mesa não está disponível para abertura.",
+      409,
+      "TABLE_NOT_FREE"
+    );
+  }
+
+  const updated = await app.prisma.cafeTable.updateMany({
+    where: { id, storeId, active: true, status: "FREE" },
+    data: { status: "OPEN", openedAt: new Date() }
+  });
+
+  if (updated.count === 0) {
+    throw new AppError(
+      "A mesa foi alterada por outro operador. Atualize o mapa de mesas.",
+      409,
+      "TABLE_CONCURRENT_UPDATE"
+    );
+  }
+
+  return getTable(app, storeId, id);
+}
+
+export async function setTableStatus(
+  app: FastifyInstance,
+  storeId: string,
+  id: string,
+  status: "FREE" | "OPEN" | "PAYMENT" | "BLOCKED"
+) {
+  await getTable(app, storeId, id);
+
+  if (status === "FREE") {
+    const openOrder = await app.prisma.order.findFirst({
+      where: { storeId, tableId: id, status: "OPEN" }
+    });
+
+    if (openOrder) {
+      throw new AppError(
+        "A mesa possui pedido aberto e não pode ser liberada manualmente.",
+        409,
+        "TABLE_HAS_OPEN_ORDER"
+      );
+    }
+  }
+
+  await app.prisma.cafeTable.update({
+    where: { id },
+    data: {
+      status,
+      openedAt: status === "FREE" ? null : undefined
+    }
+  });
+
+  return getTable(app, storeId, id);
 }

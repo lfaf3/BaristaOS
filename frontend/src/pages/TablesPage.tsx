@@ -1,18 +1,18 @@
 import { RefreshCw, ServerOff } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useApp } from "../app/AppContext";
 import { Sidebar } from "../components/Sidebar";
 import { TableCard } from "../components/TableCard";
+import { Topbar } from "../components/Topbar";
 import { normalizeApiError } from "../services/api/api-error";
 import { tablesService } from "../services/api/tables.service";
-import { Topbar } from "../components/Topbar";
 
 export function TablesPage() {
-  const navigate = useNavigate();
   const { tables, setTables, setSelectedTable, setCounterSale } = useApp();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [openingTableId, setOpeningTableId] = useState<string | null>(null);
 
   const loadTables = useCallback(async () => {
     setLoading(true);
@@ -32,16 +32,33 @@ export function TablesPage() {
     void loadTables();
   }, [loadTables]);
 
-  function openTable(number: number) {
-    setSelectedTable(number);
-    setCounterSale(false);
-    navigate("/venda");
+  async function handleTableClick(tableId: string) {
+    const table = tables.find(item => item.id === tableId);
+
+    if (!table || table.status !== "free" || openingTableId) {
+      return;
+    }
+
+    setOpeningTableId(tableId);
+    setActionError(null);
+
+    try {
+      const updatedTable = await tablesService.open(tableId);
+      setTables(current =>
+        current.map(item => (item.id === updatedTable.id ? updatedTable : item))
+      );
+      setSelectedTable(updatedTable.number);
+      setCounterSale(false);
+    } catch (cause) {
+      setActionError(normalizeApiError(cause).message);
+    } finally {
+      setOpeningTableId(null);
+    }
   }
 
   function openCounter() {
     setSelectedTable(null);
     setCounterSale(true);
-    navigate("/venda");
   }
 
   const free = tables.filter(table => table.status === "free").length;
@@ -58,7 +75,7 @@ export function TablesPage() {
               <button
                 className="button button--soft"
                 onClick={() => void loadTables()}
-                disabled={loading}
+                disabled={loading || openingTableId !== null}
               >
                 <RefreshCw size={17} className={loading ? "icon-spin" : undefined} />
                 Atualizar
@@ -83,6 +100,15 @@ export function TablesPage() {
               <span><b>{payment}</b> pagamento</span>
             </div>
           </div>
+
+          {actionError && (
+            <div className="tables-action-error" role="alert">
+              <span>{actionError}</span>
+              <button type="button" onClick={() => setActionError(null)}>
+                Fechar
+              </button>
+            </div>
+          )}
 
           {loading && tables.length === 0 && (
             <div className="tables-grid" aria-label="Carregando mesas">
@@ -121,7 +147,8 @@ export function TablesPage() {
                 <TableCard
                   key={table.id}
                   table={table}
-                  onClick={() => openTable(table.number)}
+                  busy={openingTableId === table.id}
+                  onClick={() => void handleTableClick(table.id)}
                 />
               ))}
             </div>

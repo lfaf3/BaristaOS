@@ -20,7 +20,11 @@ export async function buildApp() {
     trustProxy:true
   });
   await app.register(sensible);
-  await app.register(cors,{origin:env.CORS_ORIGIN.split(",").map(v=>v.trim()),credentials:true});
+  await app.register(cors, {
+    origin: env.CORS_ORIGIN.split(",").map((value) => value.trim()),
+    credentials: true,
+    methods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  });
   await app.register(databasePlugin);
   await app.register(authPlugin);
   await app.register(healthRoutes,{prefix:"/api/v1"});

@@ -1,4 +1,4 @@
-import { Clock3, Package, Users } from "lucide-react";
+import { Ban, Clock3, Package, Users } from "lucide-react";
 import type { CafeTable } from "../types";
 import { formatCurrency } from "../utils/currency";
 
@@ -7,24 +7,39 @@ interface Props {
   onClick: () => void;
 }
 
+const statusLabels = {
+  free: "Livre",
+  open: "Em atendimento",
+  payment: "Aguardando pagamento",
+  blocked: "Bloqueada"
+} as const;
+
 export function TableCard({ table, onClick }: Props) {
-  const statusLabel = {
-    free: "Livre",
-    open: "Em atendimento",
-    payment: "Aguardando pagamento"
-  }[table.status];
+  const blocked = table.status === "blocked";
 
   return (
-    <button className={`table-card table-card--${table.status}`} onClick={onClick}>
+    <button
+      className={`table-card table-card--${table.status}`}
+      onClick={onClick}
+      disabled={blocked}
+    >
       <div className="table-card__top">
-        <strong>Mesa {String(table.number).padStart(2, "0")}</strong>
-        <span className={`status-pill status-pill--${table.status}`}>{statusLabel}</span>
+        <strong>{table.name ?? `Mesa ${String(table.number).padStart(2, "0")}`}</strong>
+        <span className={`status-pill status-pill--${table.status}`}>
+          {statusLabels[table.status]}
+        </span>
       </div>
 
       {table.status === "free" ? (
         <div className="table-card__empty">
           <span>Disponível</span>
-          <small>Clique para iniciar</small>
+          <small>{table.seats} lugares · Clique para iniciar</small>
+        </div>
+      ) : blocked ? (
+        <div className="table-card__empty table-card__empty--blocked">
+          <Ban size={22} />
+          <span>Indisponível</span>
+          <small>Libere a mesa nas configurações.</small>
         </div>
       ) : (
         <>

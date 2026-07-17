@@ -1,12 +1,36 @@
+import { RefreshCw, ServerOff } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useApp } from "../app/AppContext";
 import { Sidebar } from "../components/Sidebar";
 import { TableCard } from "../components/TableCard";
+import { normalizeApiError } from "../services/api/api-error";
+import { tablesService } from "../services/api/tables.service";
 import { Topbar } from "../components/Topbar";
 
 export function TablesPage() {
   const navigate = useNavigate();
-  const { tables, setSelectedTable, setCounterSale } = useApp();
+  const { tables, setTables, setSelectedTable, setCounterSale } = useApp();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadTables = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await tablesService.list();
+      setTables(response);
+    } catch (cause) {
+      setError(normalizeApiError(cause).message);
+    } finally {
+      setLoading(false);
+    }
+  }, [setTables]);
+
+  useEffect(() => {
+    void loadTables();
+  }, [loadTables]);
 
   function openTable(number: number) {
     setSelectedTable(number);
@@ -29,7 +53,21 @@ export function TablesPage() {
       <Sidebar />
       <section className="dashboard-main">
         <Topbar
-          actions={<button className="button button--soft" onClick={openCounter}>Venda balcão</button>}
+          actions={
+            <>
+              <button
+                className="button button--soft"
+                onClick={() => void loadTables()}
+                disabled={loading}
+              >
+                <RefreshCw size={17} className={loading ? "icon-spin" : undefined} />
+                Atualizar
+              </button>
+              <button className="button button--soft" onClick={openCounter}>
+                Venda balcão
+              </button>
+            </>
+          }
         />
 
         <div className="dashboard-content">
@@ -46,11 +84,48 @@ export function TablesPage() {
             </div>
           </div>
 
-          <div className="tables-grid">
-            {tables.map(table => (
-              <TableCard key={table.number} table={table} onClick={() => openTable(table.number)} />
-            ))}
-          </div>
+          {loading && tables.length === 0 && (
+            <div className="tables-grid" aria-label="Carregando mesas">
+              {Array.from({ length: 12 }, (_, index) => (
+                <div className="table-skeleton" key={index}>
+                  <span className="skeleton-line skeleton-line--title" />
+                  <span className="skeleton-line skeleton-line--pill" />
+                  <span className="skeleton-line skeleton-line--body" />
+                  <span className="skeleton-line skeleton-line--small" />
+                </div>
+              ))}
+            </div>
+          )}
+
+          {!loading && error && (
+            <div className="tables-feedback" role="alert">
+              <ServerOff size={40} strokeWidth={1.6} />
+              <strong>Não foi possível carregar as mesas</strong>
+              <span>{error}</span>
+              <button className="button button--primary" onClick={() => void loadTables()}>
+                Tentar novamente
+              </button>
+            </div>
+          )}
+
+          {!loading && !error && tables.length === 0 && (
+            <div className="tables-feedback">
+              <strong>Nenhuma mesa cadastrada</strong>
+              <span>Cadastre mesas para iniciar a operação do salão.</span>
+            </div>
+          )}
+
+          {tables.length > 0 && (
+            <div className="tables-grid">
+              {tables.map(table => (
+                <TableCard
+                  key={table.id}
+                  table={table}
+                  onClick={() => openTable(table.number)}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </section>
     </main>

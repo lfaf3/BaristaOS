@@ -14,11 +14,14 @@ export type CartItem = Product & {
   quantity: number;
 };
 
-export type TableStatus = "free" | "open" | "payment";
+export type TableStatus = "free" | "open" | "payment" | "blocked";
 
 export interface CafeTable {
+  id: string;
   number: number;
+  name: string | null;
   status: TableStatus;
+  seats: number;
   amount: number;
   minutes: number;
   people: number;

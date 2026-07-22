@@ -763,3 +763,103 @@ h1, h2, h3 { letter-spacing: -0.045em; }
   font-weight: 700;
   cursor: pointer;
 }
+
+/* Sprint 3 · Release 3.2.3 — Estrutura da comanda da mesa */
+.order-page-content { overflow: auto; }
+.order-heading {
+  margin-bottom: 22px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+.order-heading h1 { margin: 5px 0 10px; font-size: 36px; }
+.order-heading__meta { display: flex; flex-wrap: wrap; gap: 16px; color: var(--muted); }
+.order-heading__meta span { display: inline-flex; align-items: center; gap: 6px; }
+.order-layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; }
+.order-card {
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--surface);
+  box-shadow: 0 8px 24px rgba(63, 44, 39, 0.06);
+}
+.order-card__header {
+  padding: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  border-bottom: 1px solid var(--line);
+}
+.order-card__header h2, .order-summary-card h2 { margin: 5px 0 0; }
+.order-card__header .button:disabled { cursor: not-allowed; opacity: .55; }
+.order-empty-state {
+  min-height: 370px;
+  padding: 34px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 10px;
+  color: var(--muted);
+  text-align: center;
+}
+.order-empty-state strong { color: var(--espresso); font-size: 20px; }
+.order-items-list { padding: 8px 22px; }
+.order-item-row {
+  padding: 17px 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  border-bottom: 1px solid var(--line);
+}
+.order-item-row:last-child { border-bottom: 0; }
+.order-item-row div { display: grid; gap: 4px; }
+.order-item-row span { color: var(--muted); font-size: 12px; }
+.order-summary-card { height: fit-content; padding: 23px; }
+.order-summary-list { margin: 24px 0 0; }
+.order-summary-list > div {
+  padding: 11px 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  color: var(--muted);
+  border-bottom: 1px solid var(--line);
+}
+.order-summary-list dt, .order-summary-list dd { margin: 0; }
+.order-summary-list dd { color: var(--text); font-weight: 700; }
+.order-summary-list .order-summary-total {
+  margin-top: 7px;
+  padding-top: 18px;
+  color: var(--espresso);
+  border-bottom: 0;
+  font-size: 22px;
+  font-weight: 800;
+}
+.order-summary-total dd { color: var(--espresso); }
+.order-summary-note {
+  margin: 15px 0 0;
+  padding-top: 15px;
+  color: var(--muted);
+  border-top: 1px dashed var(--line);
+  font-size: 12px;
+  text-align: center;
+}
+.order-page-loading {
+  min-height: 480px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 12px;
+  color: var(--muted);
+}
+.order-page-loading strong { color: var(--espresso); }
+
+@media (max-width: 980px) {
+  .order-layout { grid-template-columns: 1fr; }
+  .order-summary-card { order: -1; }
+}
+
+@media (max-width: 620px) {
+  .order-heading, .order-card__header { align-items: stretch; flex-direction: column; }
+  .order-card__header .button { width: 100%; }
+}

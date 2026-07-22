@@ -1,7 +1,15 @@
 import type { FastifyInstance } from "fastify";
 import { AppError } from "../../shared/errors/app-error.js";
 import * as repository from "./products.repository.js";
-import type { ProductWriteInput } from "./products.repository.js";
+import type { ProductWriteInput, ProductUpdateInput } from "./products.repository.js";
+
+type ProductListInput = {
+  q?: string | undefined;
+  categoryId?: string | undefined;
+  favorites?: boolean | undefined;
+  page: number;
+  pageSize: number;
+};
 
 function normalize(value: string) {
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
@@ -12,9 +20,7 @@ function serialize(product: Awaited<ReturnType<typeof repository.findProductById
   return { ...product, price: Number(product.price) };
 }
 
-export async function listProducts(app: FastifyInstance, companyId: string, input: {
-  q?: string; categoryId?: string; favorites?: boolean; page: number; pageSize: number;
-}) {
+export async function listProducts(app: FastifyInstance, companyId: string, input: ProductListInput) {
   const products = await repository.findProducts(app, companyId, input);
   const query = input.q ? normalize(input.q) : undefined;
   const filtered = query
@@ -50,7 +56,7 @@ export async function addProduct(app: FastifyInstance, companyId: string, input:
   }
 }
 
-export async function editProduct(app: FastifyInstance, companyId: string, id: string, input: Partial<ProductWriteInput>) {
+export async function editProduct(app: FastifyInstance, companyId: string, id: string, input: ProductUpdateInput) {
   await getProduct(app, companyId, id);
   if (typeof input.categoryId === "string" && !(await repository.findCategory(app, companyId, input.categoryId))) {
     throw new AppError("Categoria não encontrada.", 404, "CATEGORY_NOT_FOUND");

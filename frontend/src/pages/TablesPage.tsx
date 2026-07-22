@@ -1,5 +1,6 @@
 import { RefreshCw, ServerOff } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useApp } from "../app/AppContext";
 import { Sidebar } from "../components/Sidebar";
 import { TableCard } from "../components/TableCard";
@@ -8,6 +9,7 @@ import { normalizeApiError } from "../services/api/api-error";
 import { tablesService } from "../services/api/tables.service";
 
 export function TablesPage() {
+  const navigate = useNavigate();
   const { tables, setTables, setSelectedTable, setCounterSale } = useApp();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -35,7 +37,16 @@ export function TablesPage() {
   async function handleTableClick(tableId: string) {
     const table = tables.find(item => item.id === tableId);
 
-    if (!table || table.status !== "free" || openingTableId) {
+    if (!table || openingTableId) {
+      return;
+    }
+
+    if (table.status === "open" || table.status === "payment") {
+      navigate(`/mesas/${table.id}`);
+      return;
+    }
+
+    if (table.status !== "free") {
       return;
     }
 

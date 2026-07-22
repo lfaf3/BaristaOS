@@ -5,6 +5,7 @@ import {
   openTable,
   setTableStatus
 } from "./tables.service.js";
+import { getTableOrder } from "./tables.order.service.js";
 import {
   tableParamsSchema,
   updateTableStatusSchema
@@ -18,6 +19,11 @@ export const tablesRoutes: FastifyPluginAsync = async app => {
   app.get("/:id", async request =>
     getTable(app, request.user.storeId, tableParamsSchema.parse(request.params).id)
   );
+
+  app.get("/:id/order", async request => {
+    const { id } = tableParamsSchema.parse(request.params);
+    return getTableOrder(app, request.user.storeId, id);
+  });
 
   app.patch("/:id/open", async request => {
     const { id } = tableParamsSchema.parse(request.params);

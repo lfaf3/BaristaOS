@@ -128,12 +128,12 @@ export async function setTableStatus(
     }
   }
 
+  const data: { status: "FREE" | "OPEN" | "PAYMENT" | "BLOCKED"; openedAt?: Date | null } = { status };
+  if (status === "FREE") data.openedAt = null;
+
   await app.prisma.cafeTable.update({
     where: { id },
-    data: {
-      status,
-      openedAt: status === "FREE" ? null : undefined
-    }
+    data
   });
 
   return getTable(app, storeId, id);

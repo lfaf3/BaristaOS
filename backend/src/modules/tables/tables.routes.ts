@@ -5,11 +5,12 @@ import {
   openTable,
   setTableStatus
 } from "./tables.service.js";
-import { getTableOrder } from "./tables.order.service.js";
+import { addTableOrderItem, getTableOrder } from "./tables.order.service.js";
 import {
   tableParamsSchema,
   updateTableStatusSchema
 } from "./tables.schemas.js";
+import { addOrderItemSchema } from "./tables.order.schemas.js";
 
 export const tablesRoutes: FastifyPluginAsync = async app => {
   app.addHook("preHandler", app.authenticate);
@@ -23,6 +24,21 @@ export const tablesRoutes: FastifyPluginAsync = async app => {
   app.get("/:id/order", async request => {
     const { id } = tableParamsSchema.parse(request.params);
     return getTableOrder(app, request.user.storeId, id);
+  });
+
+  app.post("/:id/order/items", async (request, reply) => {
+    const { id } = tableParamsSchema.parse(request.params);
+    const input = addOrderItemSchema.parse(request.body);
+    return reply.code(201).send(
+      await addTableOrderItem(
+        app,
+        request.user.companyId,
+        request.user.storeId,
+        request.user.sub,
+        id,
+        input
+      )
+    );
   });
 
   app.patch("/:id/open", async request => {

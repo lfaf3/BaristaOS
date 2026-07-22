@@ -44,5 +44,16 @@ export const ordersService = {
       method: "GET",
       url: `/tables/${tableId}/order`
     });
+  },
+
+  addItem(
+    tableId: string,
+    input: { productId: string; quantity: number; notes?: string }
+  ): Promise<TableOrder> {
+    return apiRequest<TableOrderApiResponse>({
+      method: "POST",
+      url: `/tables/${tableId}/order/items`,
+      data: input
+    });
   }
 };

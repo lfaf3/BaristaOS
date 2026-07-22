@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { AddProductModal } from "../components/AddProductModal";
 import { Sidebar } from "../components/Sidebar";
 import { Topbar } from "../components/Topbar";
 import { normalizeApiError } from "../services/api/api-error";
@@ -31,6 +32,9 @@ export function TableOrderPage() {
   const [data, setData] = useState<TableOrder | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [productModalOpen, setProductModalOpen] = useState(false);
+  const [addingProduct, setAddingProduct] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const loadOrder = useCallback(async () => {
     if (!id) {
@@ -54,6 +58,22 @@ export function TableOrderPage() {
   useEffect(() => {
     void loadOrder();
   }, [loadOrder]);
+
+  async function handleAddProduct(input: { productId: string; quantity: number }) {
+    if (!id) return;
+
+    setAddingProduct(true);
+    setActionError(null);
+    try {
+      const updated = await ordersService.addItem(id, input);
+      setData(updated);
+      setProductModalOpen(false);
+    } catch (cause) {
+      setActionError(normalizeApiError(cause).message);
+    } finally {
+      setAddingProduct(false);
+    }
+  }
 
   return (
     <main className="dashboard-layout">
@@ -111,6 +131,13 @@ export function TableOrderPage() {
                 <span className="status-pill status-pill--open">Em atendimento</span>
               </header>
 
+              {actionError && (
+                <div className="tables-action-error" role="alert">
+                  <span>{actionError}</span>
+                  <button onClick={() => setActionError(null)}>Fechar</button>
+                </div>
+              )}
+
               <div className="order-layout">
                 <section className="order-card order-items-card">
                   <div className="order-card__header">
@@ -118,7 +145,10 @@ export function TableOrderPage() {
                       <span className="eyebrow">Itens da comanda</span>
                       <h2>Consumo</h2>
                     </div>
-                    <button className="button button--accent" disabled title="Disponível na próxima release">
+                    <button className="button button--accent" onClick={() => {
+                      setActionError(null);
+                      setProductModalOpen(true);
+                    }}>
                       <Plus size={18} />
                       Adicionar produto
                     </button>
@@ -128,7 +158,7 @@ export function TableOrderPage() {
                     <div className="order-empty-state">
                       <ReceiptText size={44} strokeWidth={1.5} />
                       <strong>Nenhum item adicionado</strong>
-                      <span>A inclusão de produtos será liberada na próxima release.</span>
+                      <span>Clique em “Adicionar produto” para iniciar a comanda.</span>
                     </div>
                   ) : (
                     <div className="order-items-list">
@@ -169,6 +199,17 @@ export function TableOrderPage() {
           )}
         </div>
       </section>
+
+      <AddProductModal
+        open={productModalOpen}
+        submitting={addingProduct}
+        submitError={actionError}
+        onClose={() => {
+          setActionError(null);
+          setProductModalOpen(false);
+        }}
+        onConfirm={handleAddProduct}
+      />
     </main>
   );
 }

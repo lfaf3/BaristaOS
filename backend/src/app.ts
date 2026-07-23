@@ -24,6 +24,7 @@ export async function buildApp() {
     origin: env.CORS_ORIGIN.split(",").map((value) => value.trim()),
     credentials: true,
     methods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   });
   await app.register(databasePlugin);
   await app.register(authPlugin);

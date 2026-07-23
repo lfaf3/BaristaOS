@@ -1,4 +1,5 @@
 import type { FastifyInstance } from "fastify";
+import type { Prisma } from "../../generated/prisma/client.js";
 import { AppError } from "../../shared/errors/app-error.js";
 
 export async function getTableOrder(
@@ -217,6 +218,107 @@ export async function addTableOrderItem(
       where: { id: order.id },
       data: { subtotal, total }
     });
+  });
+
+  return getTableOrder(app, storeId, tableId);
+}
+
+
+async function recalculateOrderTotals(
+  tx: Prisma.TransactionClient,
+  orderId: string,
+  discount: number
+) {
+  const aggregate = await tx.orderItem.aggregate({
+    where: { orderId },
+    _sum: { totalPrice: true }
+  });
+
+  const subtotal = Number(aggregate._sum.totalPrice ?? 0);
+  const total = Math.max(0, subtotal - discount);
+
+  await tx.order.update({
+    where: { id: orderId },
+    data: { subtotal, total }
+  });
+}
+
+export async function updateTableOrderItem(
+  app: FastifyInstance,
+  storeId: string,
+  tableId: string,
+  itemId: string,
+  input: { quantity?: number | undefined; notes?: string | null | undefined }
+) {
+  await app.prisma.$transaction(async tx => {
+    const item = await tx.orderItem.findFirst({
+      where: {
+        id: itemId,
+        order: { tableId, storeId, status: "OPEN" }
+      },
+      select: {
+        id: true,
+        orderId: true,
+        unitPrice: true,
+        order: { select: { discount: true } }
+      }
+    });
+
+    if (!item) {
+      throw new AppError(
+        "Item não encontrado na comanda aberta desta mesa.",
+        404,
+        "ORDER_ITEM_NOT_FOUND"
+      );
+    }
+
+    const data: { quantity?: number; totalPrice?: number; notes?: string | null } = {};
+
+    if (input.quantity !== undefined) {
+      data.quantity = input.quantity;
+      data.totalPrice = Number(item.unitPrice) * input.quantity;
+    }
+
+    if (input.notes !== undefined) {
+      data.notes = input.notes?.trim() || null;
+    }
+
+    await tx.orderItem.update({ where: { id: item.id }, data });
+    await recalculateOrderTotals(tx, item.orderId, Number(item.order.discount));
+  });
+
+  return getTableOrder(app, storeId, tableId);
+}
+
+export async function deleteTableOrderItem(
+  app: FastifyInstance,
+  storeId: string,
+  tableId: string,
+  itemId: string
+) {
+  await app.prisma.$transaction(async tx => {
+    const item = await tx.orderItem.findFirst({
+      where: {
+        id: itemId,
+        order: { tableId, storeId, status: "OPEN" }
+      },
+      select: {
+        id: true,
+        orderId: true,
+        order: { select: { discount: true } }
+      }
+    });
+
+    if (!item) {
+      throw new AppError(
+        "Item não encontrado na comanda aberta desta mesa.",
+        404,
+        "ORDER_ITEM_NOT_FOUND"
+      );
+    }
+
+    await tx.orderItem.delete({ where: { id: item.id } });
+    await recalculateOrderTotals(tx, item.orderId, Number(item.order.discount));
   });
 
   return getTableOrder(app, storeId, tableId);

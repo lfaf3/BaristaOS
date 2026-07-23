@@ -2,8 +2,7 @@ import axios,{AxiosError,type AxiosRequestConfig,type InternalAxiosRequestConfig
 import type {RefreshResponse} from "../../types/auth";
 import {authEvents} from "./auth-events";
 import {tokenStorage} from "./token-storage";
-const baseURL=import.meta.env.VITE_API_URL?.replace(/\/$/,"");
-if(!baseURL) throw new Error("VITE_API_URL não foi configurada.");
+const baseURL=(import.meta.env.VITE_API_URL ?? "http://localhost:3333/api/v1").replace(/\/$/,"");
 export const httpClient=axios.create({baseURL,timeout:12000,headers:{"Content-Type":"application/json"}});
 const refreshClient=axios.create({baseURL,timeout:12000,headers:{"Content-Type":"application/json"}});
 interface RetryConfig extends InternalAxiosRequestConfig{_retry?:boolean}

@@ -980,3 +980,82 @@ h1, h2, h3 { letter-spacing: -0.045em; }
   background: #fff4f4;
   font-size: 13px;
 }
+
+/* Sprint 3 · Release 3.2.5 — Gerenciamento dos itens da comanda */
+.order-item-row--managed { align-items: flex-start; }
+.order-item-main { min-width: 0; flex: 1; display: grid; gap: 12px; }
+.order-item-title { display: grid; gap: 4px; }
+.order-item-title strong { font-size: 16px; }
+.order-item-controls { display: flex; align-items: center; gap: 9px; }
+.order-quantity-button,
+.order-icon-button {
+  width: 34px;
+  height: 34px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--espresso);
+  cursor: pointer;
+}
+.order-quantity-button:hover:not(:disabled),
+.order-icon-button:hover:not(:disabled) { background: var(--cream); }
+.order-quantity-button:disabled,
+.order-icon-button:disabled,
+.order-item-notes:disabled,
+.order-remove-button:disabled { cursor: not-allowed; opacity: .55; }
+.order-item-quantity { min-width: 28px; text-align: center; }
+.order-item-notes {
+  width: fit-content;
+  max-width: 100%;
+  padding: 0;
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 7px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+.order-item-notes:hover:not(:disabled) { color: var(--espresso); }
+.order-item-notes-editor { max-width: 520px; display: grid; gap: 8px; }
+.order-item-notes-editor textarea {
+  width: 100%;
+  resize: vertical;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+.order-item-notes-editor textarea:focus { outline: 2px solid rgba(175, 104, 70, .18); border-color: var(--terracotta); }
+.order-item-notes-editor > div { display: flex; align-items: center; justify-content: flex-end; gap: 7px; }
+.order-item-notes-editor small { margin-right: auto; color: var(--muted); }
+.order-icon-button--confirm { background: var(--espresso); color: white; border-color: var(--espresso); }
+.order-item-side { min-width: 120px; display: grid; justify-items: end; gap: 13px; }
+.order-item-side > b { font-size: 16px; }
+.order-remove-button {
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  background: transparent;
+  color: var(--terracotta);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+@media (max-width: 620px) {
+  .order-item-row--managed { flex-direction: column; }
+  .order-item-side { width: 100%; grid-template-columns: 1fr auto; align-items: center; justify-items: start; }
+  .order-item-side > b { justify-self: start; }
+  .order-remove-button { justify-self: end; }
+}

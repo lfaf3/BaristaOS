@@ -1,42 +1,7 @@
 import type { TableOrder } from "../../types";
 import { apiRequest } from "./http-client";
 
-interface TableOrderApiResponse {
-  table: {
-    id: string;
-    number: number;
-    name: string | null;
-    status: "OPEN" | "PAYMENT";
-    seats: number;
-    people: number;
-    openedAt: string | null;
-    minutesOpen: number;
-  };
-  order: {
-    id: string;
-    guestCount: number;
-    openedAt: string;
-    notes: string | null;
-    subtotal: number;
-    discount: number;
-    serviceCharge: number;
-    total: number;
-  } | null;
-  items: Array<{
-    id: string;
-    productId: string;
-    code: string;
-    name: string;
-    quantity: number;
-    unitPrice: number;
-    totalPrice: number;
-    notes: string | null;
-  }>;
-  subtotal: number;
-  discount: number;
-  serviceCharge: number;
-  total: number;
-}
+interface TableOrderApiResponse extends TableOrder {}
 
 export const ordersService = {
   getByTable(tableId: string): Promise<TableOrder> {
@@ -54,6 +19,25 @@ export const ordersService = {
       method: "POST",
       url: `/tables/${tableId}/order/items`,
       data: input
+    });
+  },
+
+  updateItem(
+    tableId: string,
+    itemId: string,
+    input: { quantity?: number; notes?: string | null }
+  ): Promise<TableOrder> {
+    return apiRequest<TableOrderApiResponse>({
+      method: "PATCH",
+      url: `/tables/${tableId}/order/items/${itemId}`,
+      data: input
+    });
+  },
+
+  deleteItem(tableId: string, itemId: string): Promise<TableOrder> {
+    return apiRequest<TableOrderApiResponse>({
+      method: "DELETE",
+      url: `/tables/${tableId}/order/items/${itemId}`
     });
   }
 };

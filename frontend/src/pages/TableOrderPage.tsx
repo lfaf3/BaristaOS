@@ -1,11 +1,16 @@
 import {
   ArrowLeft,
+  Check,
   Clock3,
+  Minus,
+  Pencil,
   Plus,
   ReceiptText,
   RefreshCw,
   ServerOff,
-  Users
+  Trash2,
+  Users,
+  X
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -14,7 +19,7 @@ import { Sidebar } from "../components/Sidebar";
 import { Topbar } from "../components/Topbar";
 import { normalizeApiError } from "../services/api/api-error";
 import { ordersService } from "../services/api/orders.service";
-import type { TableOrder } from "../types";
+import type { TableOrder, TableOrderItem } from "../types";
 import { formatCurrency } from "../utils/currency";
 
 function formatOpenedAt(value: string | null) {
@@ -35,6 +40,9 @@ export function TableOrderPage() {
   const [productModalOpen, setProductModalOpen] = useState(false);
   const [addingProduct, setAddingProduct] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [busyItemId, setBusyItemId] = useState<string | null>(null);
+  const [editingNotesItemId, setEditingNotesItemId] = useState<string | null>(null);
+  const [notesDraft, setNotesDraft] = useState("");
 
   const loadOrder = useCallback(async () => {
     if (!id) {
@@ -72,6 +80,73 @@ export function TableOrderPage() {
       setActionError(normalizeApiError(cause).message);
     } finally {
       setAddingProduct(false);
+    }
+  }
+
+  async function updateItem(item: TableOrderItem, quantity: number) {
+    if (!id || busyItemId) return;
+
+    if (quantity < 1) {
+      await removeItem(item);
+      return;
+    }
+
+    setBusyItemId(item.id);
+    setActionError(null);
+    try {
+      setData(await ordersService.updateItem(id, item.id, { quantity }));
+    } catch (cause) {
+      setActionError(normalizeApiError(cause).message);
+    } finally {
+      setBusyItemId(null);
+    }
+  }
+
+  async function removeItem(item: TableOrderItem) {
+    if (!id || busyItemId) return;
+
+    setBusyItemId(item.id);
+    setActionError(null);
+    try {
+      setData(await ordersService.deleteItem(id, item.id));
+      if (editingNotesItemId === item.id) {
+        setEditingNotesItemId(null);
+        setNotesDraft("");
+      }
+    } catch (cause) {
+      setActionError(normalizeApiError(cause).message);
+    } finally {
+      setBusyItemId(null);
+    }
+  }
+
+  function startEditingNotes(item: TableOrderItem) {
+    setEditingNotesItemId(item.id);
+    setNotesDraft(item.notes ?? "");
+    setActionError(null);
+  }
+
+  function cancelEditingNotes() {
+    setEditingNotesItemId(null);
+    setNotesDraft("");
+  }
+
+  async function saveNotes(item: TableOrderItem) {
+    if (!id || busyItemId) return;
+
+    setBusyItemId(item.id);
+    setActionError(null);
+    try {
+      setData(
+        await ordersService.updateItem(id, item.id, {
+          notes: notesDraft.trim() || null
+        })
+      );
+      cancelEditingNotes();
+    } catch (cause) {
+      setActionError(normalizeApiError(cause).message);
+    } finally {
+      setBusyItemId(null);
     }
   }
 
@@ -162,15 +237,95 @@ export function TableOrderPage() {
                     </div>
                   ) : (
                     <div className="order-items-list">
-                      {data.items.map(item => (
-                        <article className="order-item-row" key={item.id}>
-                          <div>
-                            <strong>{item.quantity}× {item.name}</strong>
-                            <span>{item.code} · {formatCurrency(item.unitPrice)} cada</span>
-                          </div>
-                          <b>{formatCurrency(item.totalPrice)}</b>
-                        </article>
-                      ))}
+                      {data.items.map(item => {
+                        const busy = busyItemId === item.id;
+                        const editingNotes = editingNotesItemId === item.id;
+
+                        return (
+                          <article className="order-item-row order-item-row--managed" key={item.id}>
+                            <div className="order-item-main">
+                              <div className="order-item-title">
+                                <strong>{item.name}</strong>
+                                <span>{item.code} · {formatCurrency(item.unitPrice)} cada</span>
+                              </div>
+
+                              <div className="order-item-controls" aria-label={`Quantidade de ${item.name}`}>
+                                <button
+                                  className="order-quantity-button"
+                                  aria-label="Diminuir quantidade"
+                                  disabled={busy}
+                                  onClick={() => void updateItem(item, item.quantity - 1)}
+                                >
+                                  <Minus size={16} />
+                                </button>
+                                <strong className="order-item-quantity">{item.quantity}</strong>
+                                <button
+                                  className="order-quantity-button"
+                                  aria-label="Aumentar quantidade"
+                                  disabled={busy || item.quantity >= 99}
+                                  onClick={() => void updateItem(item, item.quantity + 1)}
+                                >
+                                  <Plus size={16} />
+                                </button>
+                              </div>
+
+                              {editingNotes ? (
+                                <div className="order-item-notes-editor">
+                                  <textarea
+                                    value={notesDraft}
+                                    maxLength={300}
+                                    rows={2}
+                                    autoFocus
+                                    placeholder="Ex.: sem açúcar, bem quente..."
+                                    onChange={event => setNotesDraft(event.target.value)}
+                                  />
+                                  <div>
+                                    <small>{notesDraft.length}/300</small>
+                                    <button
+                                      className="order-icon-button"
+                                      aria-label="Cancelar observação"
+                                      disabled={busy}
+                                      onClick={cancelEditingNotes}
+                                    >
+                                      <X size={16} />
+                                    </button>
+                                    <button
+                                      className="order-icon-button order-icon-button--confirm"
+                                      aria-label="Salvar observação"
+                                      disabled={busy}
+                                      onClick={() => void saveNotes(item)}
+                                    >
+                                      <Check size={16} />
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <button
+                                  className="order-item-notes"
+                                  disabled={busy}
+                                  onClick={() => startEditingNotes(item)}
+                                >
+                                  <Pencil size={14} />
+                                  {item.notes || "Adicionar observação"}
+                                </button>
+                              )}
+                            </div>
+
+                            <div className="order-item-side">
+                              <b>{formatCurrency(item.totalPrice)}</b>
+                              <button
+                                className="order-remove-button"
+                                aria-label={`Remover ${item.name}`}
+                                disabled={busy}
+                                onClick={() => void removeItem(item)}
+                              >
+                                {busy ? <RefreshCw size={17} className="icon-spin" /> : <Trash2 size={17} />}
+                                Remover
+                              </button>
+                            </div>
+                          </article>
+                        );
+                      })}
                     </div>
                   )}
                 </section>

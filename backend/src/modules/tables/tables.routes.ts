@@ -5,12 +5,21 @@ import {
   openTable,
   setTableStatus
 } from "./tables.service.js";
-import { addTableOrderItem, getTableOrder } from "./tables.order.service.js";
+import {
+  addTableOrderItem,
+  deleteTableOrderItem,
+  getTableOrder,
+  updateTableOrderItem
+} from "./tables.order.service.js";
 import {
   tableParamsSchema,
   updateTableStatusSchema
 } from "./tables.schemas.js";
-import { addOrderItemSchema } from "./tables.order.schemas.js";
+import {
+  addOrderItemSchema,
+  orderItemParamsSchema,
+  updateOrderItemSchema
+} from "./tables.order.schemas.js";
 
 export const tablesRoutes: FastifyPluginAsync = async app => {
   app.addHook("preHandler", app.authenticate);
@@ -39,6 +48,17 @@ export const tablesRoutes: FastifyPluginAsync = async app => {
         input
       )
     );
+  });
+
+  app.patch("/:id/order/items/:itemId", async request => {
+    const { id, itemId } = orderItemParamsSchema.parse(request.params);
+    const input = updateOrderItemSchema.parse(request.body);
+    return updateTableOrderItem(app, request.user.storeId, id, itemId, input);
+  });
+
+  app.delete("/:id/order/items/:itemId", async request => {
+    const { id, itemId } = orderItemParamsSchema.parse(request.params);
+    return deleteTableOrderItem(app, request.user.storeId, id, itemId);
   });
 
   app.patch("/:id/open", async request => {

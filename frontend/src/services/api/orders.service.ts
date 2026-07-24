@@ -34,6 +34,17 @@ export const ordersService = {
     });
   },
 
+  close(
+    tableId: string,
+    input: { discount: number; serviceChargePercentage: number }
+  ): Promise<TableOrder> {
+    return apiRequest<TableOrderApiResponse>({
+      method: "PATCH",
+      url: `/tables/${tableId}/order/close`,
+      data: input
+    });
+  },
+
   deleteItem(tableId: string, itemId: string): Promise<TableOrder> {
     return apiRequest<TableOrderApiResponse>({
       method: "DELETE",

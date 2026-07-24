@@ -19,3 +19,9 @@ export const updateOrderItemSchema = z
   .refine(input => input.quantity !== undefined || input.notes !== undefined, {
     message: "Informe a quantidade ou a observação."
   });
+
+
+export const closeTableOrderSchema = z.object({
+  discount: z.coerce.number().min(0).max(999999.99).default(0),
+  serviceChargePercentage: z.coerce.number().min(0).max(100).default(10)
+});

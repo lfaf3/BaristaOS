@@ -57,12 +57,14 @@ export interface TableOrder {
     notes: string | null;
     subtotal: number;
     discount: number;
+    serviceChargePercentage: number;
     serviceCharge: number;
     total: number;
   } | null;
   items: TableOrderItem[];
   subtotal: number;
   discount: number;
+  serviceChargePercentage: number;
   serviceCharge: number;
   total: number;
 }

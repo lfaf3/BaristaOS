@@ -240,6 +240,8 @@ model Order {
   guestCount    Int         @default(0) @map("guest_count")
   subtotal      Decimal     @default(0) @db.Decimal(12, 2)
   discount      Decimal     @default(0) @db.Decimal(12, 2)
+  serviceChargeRate Decimal @default(0) @map("service_charge_rate") @db.Decimal(5, 2)
+  serviceCharge Decimal     @default(0) @map("service_charge") @db.Decimal(12, 2)
   total         Decimal     @default(0) @db.Decimal(12, 2)
   openedAt      DateTime    @default(now()) @map("opened_at")
   closedAt      DateTime?   @map("closed_at")

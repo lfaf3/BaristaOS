@@ -1059,3 +1059,67 @@ h1, h2, h3 { letter-spacing: -0.045em; }
   .order-item-side > b { justify-self: start; }
   .order-remove-button { justify-self: end; }
 }
+
+/* Sprint 3 · Release 3.2.6 — Fechamento da conta */
+.order-locked-banner {
+  margin: 0 0 18px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid rgba(86, 133, 166, .28);
+  border-radius: 14px;
+  color: #315f7d;
+  background: #edf4f8;
+}
+.order-locked-banner div { display: grid; gap: 3px; }
+.order-locked-banner span { color: #5d788a; font-size: 13px; }
+.order-closing-fields {
+  margin-top: 20px;
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--background);
+}
+.order-closing-fields label { display: grid; gap: 6px; }
+.order-closing-fields label span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+.order-closing-fields input {
+  width: 100%;
+  min-height: 42px;
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--text);
+  background: var(--surface);
+  font: inherit;
+  font-weight: 700;
+  outline: none;
+}
+.order-closing-fields input:focus {
+  border-color: rgba(101, 67, 54, .5);
+  box-shadow: 0 0 0 3px rgba(101, 67, 54, .09);
+}
+.order-close-button {
+  width: 100%;
+  margin-top: 20px;
+  justify-content: center;
+}
+.order-payment-next-step {
+  margin-top: 20px;
+  padding: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  border-radius: 12px;
+  color: #315f7d;
+  background: #e5eef4;
+  font-weight: 800;
+  text-align: center;
+}

@@ -1,0 +1,3 @@
+ALTER TABLE "orders"
+ADD COLUMN "service_charge_rate" DECIMAL(5,2) NOT NULL DEFAULT 0,
+ADD COLUMN "service_charge" DECIMAL(12,2) NOT NULL DEFAULT 0;

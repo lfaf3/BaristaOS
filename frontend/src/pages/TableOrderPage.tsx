@@ -1,7 +1,9 @@
 import {
   ArrowLeft,
   Check,
+  CircleDollarSign,
   Clock3,
+  LockKeyhole,
   Minus,
   Pencil,
   Plus,
@@ -12,7 +14,7 @@ import {
   Users,
   X
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { AddProductModal } from "../components/AddProductModal";
 import { Sidebar } from "../components/Sidebar";
@@ -31,6 +33,12 @@ function formatOpenedAt(value: string | null) {
   }).format(new Date(value));
 }
 
+function parseMoney(value: string) {
+  const normalized = value.replace(/\./g, "").replace(",", ".").trim();
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
+}
+
 export function TableOrderPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -43,6 +51,12 @@ export function TableOrderPage() {
   const [busyItemId, setBusyItemId] = useState<string | null>(null);
   const [editingNotesItemId, setEditingNotesItemId] = useState<string | null>(null);
   const [notesDraft, setNotesDraft] = useState("");
+  const [servicePercentage, setServicePercentage] = useState("10");
+  const [discount, setDiscount] = useState("0,00");
+  const [closingOrder, setClosingOrder] = useState(false);
+
+  const isPayment = data?.table.status === "PAYMENT";
+  const isEditable = data?.table.status === "OPEN";
 
   const loadOrder = useCallback(async () => {
     if (!id) {
@@ -55,7 +69,10 @@ export function TableOrderPage() {
     setError(null);
 
     try {
-      setData(await ordersService.getByTable(id));
+      const response = await ordersService.getByTable(id);
+      setData(response);
+      setServicePercentage(String(response.serviceChargePercentage || 10));
+      setDiscount(response.discount.toFixed(2).replace(".", ","));
     } catch (cause) {
       setError(normalizeApiError(cause).message);
     } finally {
@@ -67,8 +84,28 @@ export function TableOrderPage() {
     void loadOrder();
   }, [loadOrder]);
 
+  const preview = useMemo(() => {
+    if (!data) return { service: 0, discount: 0, total: 0 };
+    if (isPayment) {
+      return {
+        service: data.serviceCharge,
+        discount: data.discount,
+        total: data.total
+      };
+    }
+
+    const percentage = Math.min(100, Math.max(0, Number(servicePercentage) || 0));
+    const service = Math.round(data.subtotal * (percentage / 100) * 100) / 100;
+    const discountValue = parseMoney(discount);
+    return {
+      service,
+      discount: discountValue,
+      total: Math.max(0, Math.round((data.subtotal + service - discountValue) * 100) / 100)
+    };
+  }, [data, discount, isPayment, servicePercentage]);
+
   async function handleAddProduct(input: { productId: string; quantity: number }) {
-    if (!id) return;
+    if (!id || !isEditable) return;
 
     setAddingProduct(true);
     setActionError(null);
@@ -84,7 +121,7 @@ export function TableOrderPage() {
   }
 
   async function updateItem(item: TableOrderItem, quantity: number) {
-    if (!id || busyItemId) return;
+    if (!id || busyItemId || !isEditable) return;
 
     if (quantity < 1) {
       await removeItem(item);
@@ -103,7 +140,7 @@ export function TableOrderPage() {
   }
 
   async function removeItem(item: TableOrderItem) {
-    if (!id || busyItemId) return;
+    if (!id || busyItemId || !isEditable) return;
 
     setBusyItemId(item.id);
     setActionError(null);
@@ -121,6 +158,7 @@ export function TableOrderPage() {
   }
 
   function startEditingNotes(item: TableOrderItem) {
+    if (!isEditable) return;
     setEditingNotesItemId(item.id);
     setNotesDraft(item.notes ?? "");
     setActionError(null);
@@ -132,7 +170,7 @@ export function TableOrderPage() {
   }
 
   async function saveNotes(item: TableOrderItem) {
-    if (!id || busyItemId) return;
+    if (!id || busyItemId || !isEditable) return;
 
     setBusyItemId(item.id);
     setActionError(null);
@@ -147,6 +185,46 @@ export function TableOrderPage() {
       setActionError(normalizeApiError(cause).message);
     } finally {
       setBusyItemId(null);
+    }
+  }
+
+  async function handleCloseOrder() {
+    if (!id || !data || !isEditable || closingOrder) return;
+
+    if (data.items.length === 0) {
+      setActionError("Adicione ao menos um item antes de fechar a conta.");
+      return;
+    }
+
+    const percentage = Math.min(100, Math.max(0, Number(servicePercentage) || 0));
+    const discountValue = parseMoney(discount);
+
+    if (discountValue > data.subtotal + preview.service) {
+      setActionError("O desconto não pode ser maior que o valor da conta.");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Fechar a conta no valor de ${formatCurrency(preview.total)} e enviar a mesa para pagamento?`
+    );
+    if (!confirmed) return;
+
+    setClosingOrder(true);
+    setActionError(null);
+    try {
+      const updated = await ordersService.close(id, {
+        discount: discountValue,
+        serviceChargePercentage: percentage
+      });
+      setData(updated);
+      setServicePercentage(String(updated.serviceChargePercentage));
+      setDiscount(updated.discount.toFixed(2).replace(".", ","));
+      setEditingNotesItemId(null);
+      setProductModalOpen(false);
+    } catch (cause) {
+      setActionError(normalizeApiError(cause).message);
+    } finally {
+      setClosingOrder(false);
     }
   }
 
@@ -196,20 +274,34 @@ export function TableOrderPage() {
             <>
               <header className="order-heading">
                 <div>
-                  <span className="eyebrow">Comanda em atendimento</span>
+                  <span className="eyebrow">
+                    {isPayment ? "Conta fechada" : "Comanda em atendimento"}
+                  </span>
                   <h1>{data.table.name ?? `Mesa ${String(data.table.number).padStart(2, "0")}`}</h1>
                   <div className="order-heading__meta">
                     <span><Clock3 size={16} /> Aberta às {formatOpenedAt(data.table.openedAt)}</span>
                     <span><Users size={16} /> {data.table.people} pessoas</span>
                   </div>
                 </div>
-                <span className="status-pill status-pill--open">Em atendimento</span>
+                <span className={`status-pill status-pill--${isPayment ? "payment" : "open"}`}>
+                  {isPayment ? "Aguardando pagamento" : "Em atendimento"}
+                </span>
               </header>
 
               {actionError && (
                 <div className="tables-action-error" role="alert">
                   <span>{actionError}</span>
                   <button onClick={() => setActionError(null)}>Fechar</button>
+                </div>
+              )}
+
+              {isPayment && (
+                <div className="order-locked-banner">
+                  <LockKeyhole size={20} />
+                  <div>
+                    <strong>Comanda bloqueada para edição</strong>
+                    <span>A conta foi fechada e está aguardando o registro do pagamento.</span>
+                  </div>
                 </div>
               )}
 
@@ -220,10 +312,14 @@ export function TableOrderPage() {
                       <span className="eyebrow">Itens da comanda</span>
                       <h2>Consumo</h2>
                     </div>
-                    <button className="button button--accent" onClick={() => {
-                      setActionError(null);
-                      setProductModalOpen(true);
-                    }}>
+                    <button
+                      className="button button--accent"
+                      disabled={!isEditable}
+                      onClick={() => {
+                        setActionError(null);
+                        setProductModalOpen(true);
+                      }}
+                    >
                       <Plus size={18} />
                       Adicionar produto
                     </button>
@@ -253,7 +349,7 @@ export function TableOrderPage() {
                                 <button
                                   className="order-quantity-button"
                                   aria-label="Diminuir quantidade"
-                                  disabled={busy}
+                                  disabled={busy || !isEditable}
                                   onClick={() => void updateItem(item, item.quantity - 1)}
                                 >
                                   <Minus size={16} />
@@ -262,7 +358,7 @@ export function TableOrderPage() {
                                 <button
                                   className="order-quantity-button"
                                   aria-label="Aumentar quantidade"
-                                  disabled={busy || item.quantity >= 99}
+                                  disabled={busy || !isEditable || item.quantity >= 99}
                                   onClick={() => void updateItem(item, item.quantity + 1)}
                                 >
                                   <Plus size={16} />
@@ -281,17 +377,11 @@ export function TableOrderPage() {
                                   />
                                   <div>
                                     <small>{notesDraft.length}/300</small>
-                                    <button
-                                      className="order-icon-button"
-                                      aria-label="Cancelar observação"
-                                      disabled={busy}
-                                      onClick={cancelEditingNotes}
-                                    >
+                                    <button className="order-icon-button" disabled={busy} onClick={cancelEditingNotes}>
                                       <X size={16} />
                                     </button>
                                     <button
                                       className="order-icon-button order-icon-button--confirm"
-                                      aria-label="Salvar observação"
                                       disabled={busy}
                                       onClick={() => void saveNotes(item)}
                                     >
@@ -302,11 +392,11 @@ export function TableOrderPage() {
                               ) : (
                                 <button
                                   className="order-item-notes"
-                                  disabled={busy}
+                                  disabled={busy || !isEditable}
                                   onClick={() => startEditingNotes(item)}
                                 >
                                   <Pencil size={14} />
-                                  {item.notes || "Adicionar observação"}
+                                  {item.notes || (isEditable ? "Adicionar observação" : "Sem observação")}
                                 </button>
                               )}
                             </div>
@@ -315,8 +405,7 @@ export function TableOrderPage() {
                               <b>{formatCurrency(item.totalPrice)}</b>
                               <button
                                 className="order-remove-button"
-                                aria-label={`Remover ${item.name}`}
-                                disabled={busy}
+                                disabled={busy || !isEditable}
                                 onClick={() => void removeItem(item)}
                               >
                                 {busy ? <RefreshCw size={17} className="icon-spin" /> : <Trash2 size={17} />}
@@ -333,16 +422,60 @@ export function TableOrderPage() {
                 <aside className="order-card order-summary-card">
                   <span className="eyebrow">Resumo</span>
                   <h2>Total da mesa</h2>
+
+                  {isEditable && (
+                    <div className="order-closing-fields">
+                      <label>
+                        <span>Taxa de serviço (%)</span>
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.01"
+                          value={servicePercentage}
+                          onChange={event => setServicePercentage(event.target.value)}
+                        />
+                      </label>
+                      <label>
+                        <span>Desconto (R$)</span>
+                        <input
+                          inputMode="decimal"
+                          value={discount}
+                          onChange={event => setDiscount(event.target.value)}
+                          onBlur={() => setDiscount(parseMoney(discount).toFixed(2).replace(".", ","))}
+                        />
+                      </label>
+                    </div>
+                  )}
+
                   <dl className="order-summary-list">
                     <div><dt>Subtotal</dt><dd>{formatCurrency(data.subtotal)}</dd></div>
-                    {data.discount > 0 && (
-                      <div><dt>Desconto</dt><dd>- {formatCurrency(data.discount)}</dd></div>
-                    )}
-                    <div><dt>Serviço</dt><dd>{formatCurrency(data.serviceCharge)}</dd></div>
+                    <div>
+                      <dt>Serviço {isPayment ? `(${data.serviceChargePercentage}%)` : `(${Number(servicePercentage) || 0}%)`}</dt>
+                      <dd>{formatCurrency(preview.service)}</dd>
+                    </div>
+                    <div><dt>Desconto</dt><dd>- {formatCurrency(preview.discount)}</dd></div>
                     <div className="order-summary-total">
-                      <dt>Total</dt><dd>{formatCurrency(data.total)}</dd>
+                      <dt>Total</dt><dd>{formatCurrency(preview.total)}</dd>
                     </div>
                   </dl>
+
+                  {isEditable ? (
+                    <button
+                      className="button button--primary order-close-button"
+                      disabled={closingOrder || data.items.length === 0}
+                      onClick={() => void handleCloseOrder()}
+                    >
+                      {closingOrder ? <RefreshCw size={18} className="icon-spin" /> : <CircleDollarSign size={18} />}
+                      {closingOrder ? "Fechando conta..." : "Fechar conta"}
+                    </button>
+                  ) : (
+                    <div className="order-payment-next-step">
+                      <CircleDollarSign size={22} />
+                      <span>Pronta para receber o pagamento</span>
+                    </div>
+                  )}
+
                   <p className="order-summary-note">
                     {data.order
                       ? `Comanda ${data.order.id.slice(0, 8).toUpperCase()}`
@@ -356,7 +489,7 @@ export function TableOrderPage() {
       </section>
 
       <AddProductModal
-        open={productModalOpen}
+        open={productModalOpen && Boolean(isEditable)}
         submitting={addingProduct}
         submitError={actionError}
         onClose={() => {

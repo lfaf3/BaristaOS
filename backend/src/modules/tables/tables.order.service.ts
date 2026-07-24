@@ -39,6 +39,8 @@ export async function getTableOrder(
       guestCount: true,
       subtotal: true,
       discount: true,
+      serviceChargeRate: true,
+      serviceCharge: true,
       total: true,
       openedAt: true,
       notes: true,
@@ -85,7 +87,8 @@ export async function getTableOrder(
           notes: order.notes,
           subtotal: Number(order.subtotal),
           discount: Number(order.discount),
-          serviceCharge: 0,
+          serviceChargePercentage: Number(order.serviceChargeRate),
+          serviceCharge: Number(order.serviceCharge),
           total: Number(order.total)
         }
       : null,
@@ -102,7 +105,8 @@ export async function getTableOrder(
       })) ?? [],
     subtotal: order ? Number(order.subtotal) : 0,
     discount: order ? Number(order.discount) : 0,
-    serviceCharge: 0,
+    serviceChargePercentage: order ? Number(order.serviceChargeRate) : 0,
+    serviceCharge: order ? Number(order.serviceCharge) : 0,
     total: order ? Number(order.total) : 0
   };
 }
@@ -254,7 +258,7 @@ export async function updateTableOrderItem(
     const item = await tx.orderItem.findFirst({
       where: {
         id: itemId,
-        order: { tableId, storeId, status: "OPEN" }
+        order: { tableId, storeId, status: "OPEN", table: { status: "OPEN" } }
       },
       select: {
         id: true,
@@ -300,7 +304,7 @@ export async function deleteTableOrderItem(
     const item = await tx.orderItem.findFirst({
       where: {
         id: itemId,
-        order: { tableId, storeId, status: "OPEN" }
+        order: { tableId, storeId, status: "OPEN", table: { status: "OPEN" } }
       },
       select: {
         id: true,
@@ -319,6 +323,108 @@ export async function deleteTableOrderItem(
 
     await tx.orderItem.delete({ where: { id: item.id } });
     await recalculateOrderTotals(tx, item.orderId, Number(item.order.discount));
+  });
+
+  return getTableOrder(app, storeId, tableId);
+}
+
+
+function roundCurrency(value: number) {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
+}
+
+export async function closeTableOrder(
+  app: FastifyInstance,
+  storeId: string,
+  tableId: string,
+  input: { discount: number; serviceChargePercentage: number }
+) {
+  await app.prisma.$transaction(async tx => {
+    const table = await tx.cafeTable.findFirst({
+      where: { id: tableId, storeId, active: true },
+      select: { id: true, status: true }
+    });
+
+    if (!table) {
+      throw new AppError("Mesa não encontrada.", 404, "TABLE_NOT_FOUND");
+    }
+
+    if (table.status !== "OPEN") {
+      throw new AppError(
+        "A mesa precisa estar em atendimento para fechar a conta.",
+        409,
+        "TABLE_NOT_OPEN"
+      );
+    }
+
+    const order = await tx.order.findFirst({
+      where: { storeId, tableId, status: "OPEN" },
+      orderBy: { openedAt: "desc" },
+      select: { id: true }
+    });
+
+    if (!order) {
+      throw new AppError(
+        "A mesa não possui uma comanda aberta.",
+        409,
+        "ORDER_NOT_FOUND"
+      );
+    }
+
+    const aggregate = await tx.orderItem.aggregate({
+      where: { orderId: order.id },
+      _sum: { totalPrice: true },
+      _count: { id: true }
+    });
+
+    if (aggregate._count.id === 0) {
+      throw new AppError(
+        "Adicione ao menos um item antes de fechar a conta.",
+        409,
+        "ORDER_HAS_NO_ITEMS"
+      );
+    }
+
+    const subtotal = roundCurrency(Number(aggregate._sum.totalPrice ?? 0));
+    const serviceCharge = roundCurrency(
+      subtotal * (input.serviceChargePercentage / 100)
+    );
+    const maximumDiscount = roundCurrency(subtotal + serviceCharge);
+
+    if (input.discount > maximumDiscount) {
+      throw new AppError(
+        "O desconto não pode ser maior que o valor da conta.",
+        422,
+        "INVALID_DISCOUNT"
+      );
+    }
+
+    const discount = roundCurrency(input.discount);
+    const total = roundCurrency(Math.max(0, subtotal + serviceCharge - discount));
+
+    const updatedTable = await tx.cafeTable.updateMany({
+      where: { id: tableId, storeId, active: true, status: "OPEN" },
+      data: { status: "PAYMENT" }
+    });
+
+    if (updatedTable.count === 0) {
+      throw new AppError(
+        "A mesa foi alterada por outro operador. Atualize a comanda.",
+        409,
+        "TABLE_CONCURRENT_UPDATE"
+      );
+    }
+
+    await tx.order.update({
+      where: { id: order.id },
+      data: {
+        subtotal,
+        discount,
+        serviceChargeRate: input.serviceChargePercentage,
+        serviceCharge,
+        total
+      }
+    });
   });
 
   return getTableOrder(app, storeId, tableId);

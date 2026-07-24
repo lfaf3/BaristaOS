@@ -19,6 +19,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { AddProductModal } from "../components/AddProductModal";
 import { Sidebar } from "../components/Sidebar";
 import { Topbar } from "../components/Topbar";
+import { TablePaymentModal, type OrderPaymentMethod } from "../components/TablePaymentModal";
 import { normalizeApiError } from "../services/api/api-error";
 import { ordersService } from "../services/api/orders.service";
 import type { TableOrder, TableOrderItem } from "../types";
@@ -54,8 +55,11 @@ export function TableOrderPage() {
   const [servicePercentage, setServicePercentage] = useState("10");
   const [discount, setDiscount] = useState("0,00");
   const [closingOrder, setClosingOrder] = useState(false);
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [payingOrder, setPayingOrder] = useState(false);
 
   const isPayment = data?.table.status === "PAYMENT";
+  const isReady = data?.table.status === "READY_TO_CLOSE";
   const isEditable = data?.table.status === "OPEN";
 
   const loadOrder = useCallback(async () => {
@@ -86,7 +90,7 @@ export function TableOrderPage() {
 
   const preview = useMemo(() => {
     if (!data) return { service: 0, discount: 0, total: 0 };
-    if (isPayment) {
+    if (isPayment || isReady) {
       return {
         service: data.serviceCharge,
         discount: data.discount,
@@ -102,7 +106,7 @@ export function TableOrderPage() {
       discount: discountValue,
       total: Math.max(0, Math.round((data.subtotal + service - discountValue) * 100) / 100)
     };
-  }, [data, discount, isPayment, servicePercentage]);
+  }, [data, discount, isPayment, isReady, servicePercentage]);
 
   async function handleAddProduct(input: { productId: string; quantity: number }) {
     if (!id || !isEditable) return;
@@ -185,6 +189,22 @@ export function TableOrderPage() {
       setActionError(normalizeApiError(cause).message);
     } finally {
       setBusyItemId(null);
+    }
+  }
+
+  async function handlePayment(payments: Array<{ method: OrderPaymentMethod; amount: number }>) {
+    if (!data?.order || payingOrder) return;
+
+    setPayingOrder(true);
+    setActionError(null);
+    try {
+      const updated = await ordersService.pay(data.order.id, payments);
+      setData(updated);
+      setPaymentModalOpen(false);
+    } catch (cause) {
+      setActionError(normalizeApiError(cause).message);
+    } finally {
+      setPayingOrder(false);
     }
   }
 
@@ -275,7 +295,7 @@ export function TableOrderPage() {
               <header className="order-heading">
                 <div>
                   <span className="eyebrow">
-                    {isPayment ? "Conta fechada" : "Comanda em atendimento"}
+                    {isReady ? "Pagamento concluído" : isPayment ? "Conta fechada" : "Comanda em atendimento"}
                   </span>
                   <h1>{data.table.name ?? `Mesa ${String(data.table.number).padStart(2, "0")}`}</h1>
                   <div className="order-heading__meta">
@@ -283,8 +303,8 @@ export function TableOrderPage() {
                     <span><Users size={16} /> {data.table.people} pessoas</span>
                   </div>
                 </div>
-                <span className={`status-pill status-pill--${isPayment ? "payment" : "open"}`}>
-                  {isPayment ? "Aguardando pagamento" : "Em atendimento"}
+                <span className={`status-pill status-pill--${isReady ? "ready" : isPayment ? "payment" : "open"}`}>
+                  {isReady ? "Pagamento concluído" : isPayment ? "Aguardando pagamento" : "Em atendimento"}
                 </span>
               </header>
 
@@ -295,12 +315,12 @@ export function TableOrderPage() {
                 </div>
               )}
 
-              {isPayment && (
+              {(isPayment || isReady) && (
                 <div className="order-locked-banner">
                   <LockKeyhole size={20} />
                   <div>
-                    <strong>Comanda bloqueada para edição</strong>
-                    <span>A conta foi fechada e está aguardando o registro do pagamento.</span>
+                    <strong>{isReady ? "Pagamento concluído" : "Comanda bloqueada para edição"}</strong>
+                    <span>{isReady ? "A mesa aguarda apenas a liberação pelo operador." : "A conta foi fechada e está aguardando o registro do pagamento."}</span>
                   </div>
                 </div>
               )}
@@ -469,10 +489,30 @@ export function TableOrderPage() {
                       {closingOrder ? <RefreshCw size={18} className="icon-spin" /> : <CircleDollarSign size={18} />}
                       {closingOrder ? "Fechando conta..." : "Fechar conta"}
                     </button>
+                  ) : isPayment ? (
+                    <button
+                      className="button button--success order-close-button"
+                      onClick={() => { setActionError(null); setPaymentModalOpen(true); }}
+                    >
+                      <CircleDollarSign size={18} />
+                      Receber pagamento
+                    </button>
                   ) : (
-                    <div className="order-payment-next-step">
-                      <CircleDollarSign size={22} />
-                      <span>Pronta para receber o pagamento</span>
+                    <div className="order-payment-next-step order-payment-next-step--ready">
+                      <Check size={22} />
+                      <span>Pagamento concluído · aguardando liberação</span>
+                    </div>
+                  )}
+
+                  {(data.payments ?? []).length > 0 && (
+                    <div className="order-payment-history">
+                      <strong>Pagamentos</strong>
+                      {(data.payments ?? []).map(payment => (
+                        <div key={payment.id}>
+                          <span>{({ CASH: "Dinheiro", PIX: "PIX", TEF_CREDIT: "Crédito", TEF_DEBIT: "Débito", COURTESY: "Cortesia" } as const)[payment.method]}</span>
+                          <b>{formatCurrency(payment.amount)}</b>
+                        </div>
+                      ))}
                     </div>
                   )}
 
@@ -487,6 +527,15 @@ export function TableOrderPage() {
           )}
         </div>
       </section>
+
+      <TablePaymentModal
+        open={paymentModalOpen && Boolean(isPayment)}
+        total={data?.balance ?? data?.total ?? 0}
+        submitting={payingOrder}
+        error={actionError}
+        onClose={() => { if (!payingOrder) { setActionError(null); setPaymentModalOpen(false); } }}
+        onConfirm={payments => void handlePayment(payments)}
+      />
 
       <AddProductModal
         open={productModalOpen && Boolean(isEditable)}

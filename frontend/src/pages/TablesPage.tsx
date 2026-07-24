@@ -41,7 +41,7 @@ export function TablesPage() {
       return;
     }
 
-    if (table.status === "open" || table.status === "payment") {
+    if (table.status === "open" || table.status === "payment" || table.status === "ready") {
       navigate(`/mesas/${table.id}`);
       return;
     }
@@ -75,6 +75,7 @@ export function TablesPage() {
   const free = tables.filter(table => table.status === "free").length;
   const open = tables.filter(table => table.status === "open").length;
   const payment = tables.filter(table => table.status === "payment").length;
+  const ready = tables.filter(table => table.status === "ready").length;
 
   return (
     <main className="dashboard-layout">
@@ -109,6 +110,7 @@ export function TablesPage() {
               <span><b>{free}</b> livres</span>
               <span><b>{open}</b> em atendimento</span>
               <span><b>{payment}</b> pagamento</span>
+              <span><b>{ready}</b> pagos</span>
             </div>
           </div>
 

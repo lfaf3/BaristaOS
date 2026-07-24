@@ -12,6 +12,7 @@ const statusLabels = {
   free: "Livre",
   open: "Em atendimento",
   payment: "Aguardando pagamento",
+  ready: "Pagamento concluído",
   blocked: "Bloqueada"
 } as const;
 

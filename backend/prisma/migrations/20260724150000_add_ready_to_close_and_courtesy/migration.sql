@@ -1,0 +1,5 @@
+-- AlterEnum
+ALTER TYPE "TableStatus" ADD VALUE IF NOT EXISTS 'READY_TO_CLOSE';
+
+-- AlterEnum
+ALTER TYPE "PaymentMethod" ADD VALUE IF NOT EXISTS 'COURTESY';

@@ -1123,3 +1123,26 @@ h1, h2, h3 { letter-spacing: -0.045em; }
   font-weight: 800;
   text-align: center;
 }
+
+
+/* Release 3.2.7 — pagamentos */
+.table-card--ready { border-color: rgba(76, 139, 92, .52); background: linear-gradient(180deg, #fff, #f1f8f2); }
+.status-pill--ready { color: #2f7141; background: #e3f3e7; }
+.order-payment-next-step--ready { color: #2f7141; background: #eaf6ed; border-color: #cae7d1; }
+.table-payment-modal { width: min(620px, calc(100vw - 32px)); }
+.payment-total-highlight { display: flex; align-items: end; justify-content: space-between; padding: 16px; border-radius: 14px; background: var(--surface-soft, #f6f3ee); }
+.payment-total-highlight span { color: var(--muted); }
+.payment-total-highlight strong { font-size: 28px; }
+.table-payment-rows { display: grid; gap: 12px; margin-top: 18px; }
+.table-payment-row { display: grid; grid-template-columns: minmax(150px, 1fr) minmax(130px, .8fr) auto; gap: 10px; align-items: end; padding: 12px; border: 1px solid var(--border, #e3ded7); border-radius: 12px; }
+.table-payment-row label { display: grid; gap: 6px; }
+.table-payment-row label > span { font-size: 12px; font-weight: 700; color: var(--muted); }
+.table-payment-row select, .table-payment-row input { width: 100%; min-height: 42px; padding: 0 11px; border: 1px solid var(--border, #d9d2c8); border-radius: 9px; background: white; font: inherit; }
+.table-payment-remove { margin-bottom: 2px; }
+.table-payment-add { margin-top: 12px; }
+.payment-balance-summary { display: grid; gap: 8px; margin: 18px 0 0; padding-top: 14px; border-top: 1px solid var(--border, #e3ded7); }
+.payment-balance-summary > div { display: flex; justify-content: space-between; }
+.payment-balance-summary--pending { color: #a14e3d; }
+.order-payment-history { display: grid; gap: 8px; margin-top: 16px; padding: 14px; border-radius: 12px; background: #f6f8f6; }
+.order-payment-history > div { display: flex; justify-content: space-between; font-size: 14px; }
+@media (max-width: 620px) { .table-payment-row { grid-template-columns: 1fr; } }

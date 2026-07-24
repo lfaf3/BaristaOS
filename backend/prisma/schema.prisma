@@ -24,6 +24,7 @@ enum TableStatus {
   FREE
   OPEN
   PAYMENT
+  READY_TO_CLOSE
   BLOCKED
 }
 
@@ -43,6 +44,7 @@ enum PaymentMethod {
   PIX
   TEF_CREDIT
   TEF_DEBIT
+  COURTESY
 }
 
 enum PaymentStatus {

@@ -32,10 +32,11 @@ export async function getTableOrder(
   }
 
   const order = await app.prisma.order.findFirst({
-    where: { storeId, tableId, status: "OPEN" },
+    where: { storeId, tableId, status: { in: ["OPEN", "PAID"] } },
     orderBy: { openedAt: "desc" },
     select: {
       id: true,
+      status: true,
       guestCount: true,
       subtotal: true,
       discount: true,
@@ -44,6 +45,16 @@ export async function getTableOrder(
       total: true,
       openedAt: true,
       notes: true,
+      payments: {
+        where: { status: "APPROVED" },
+        orderBy: { createdAt: "asc" },
+        select: {
+          id: true,
+          method: true,
+          amount: true,
+          approvedAt: true
+        }
+      },
       items: {
         orderBy: { createdAt: "asc" },
         select: {
@@ -89,9 +100,26 @@ export async function getTableOrder(
           discount: Number(order.discount),
           serviceChargePercentage: Number(order.serviceChargeRate),
           serviceCharge: Number(order.serviceCharge),
-          total: Number(order.total)
+          total: Number(order.total),
+          status: order.status
         }
       : null,
+    payments:
+      order?.payments.map(payment => ({
+        id: payment.id,
+        method: payment.method,
+        amount: Number(payment.amount),
+        approvedAt: payment.approvedAt?.toISOString() ?? null
+      })) ?? [],
+    paidAmount:
+      order?.payments.reduce((sum, payment) => sum + Number(payment.amount), 0) ?? 0,
+    balance: order
+      ? Math.max(
+          0,
+          Number(order.total) -
+            order.payments.reduce((sum, payment) => sum + Number(payment.amount), 0)
+        )
+      : 0,
     items:
       order?.items.map(item => ({
         id: item.id,

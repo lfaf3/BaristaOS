@@ -5,7 +5,7 @@ interface TableApiResponse {
   id: string;
   number: number;
   name: string | null;
-  status: "FREE" | "OPEN" | "PAYMENT" | "BLOCKED";
+  status: "FREE" | "OPEN" | "PAYMENT" | "READY_TO_CLOSE" | "BLOCKED";
   seats: number;
   people: number;
   items: number;
@@ -18,6 +18,7 @@ function mapStatus(status: TableApiResponse["status"]): TableStatus {
     FREE: "free",
     OPEN: "open",
     PAYMENT: "payment",
+    READY_TO_CLOSE: "ready",
     BLOCKED: "blocked"
   };
 

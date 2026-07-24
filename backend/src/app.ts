@@ -13,6 +13,7 @@ import { categoriesRoutes } from "./modules/categories/categories.routes.js";
 import { productsRoutes } from "./modules/products/products.routes.js";
 import { tablesRoutes } from "./modules/tables/tables.routes.js";
 import { cashRoutes } from "./modules/cash/cash.routes.js";
+import { paymentsRoutes } from "./modules/payments/payments.routes.js";
 
 export async function buildApp() {
   const app=Fastify({
@@ -21,7 +22,15 @@ export async function buildApp() {
   });
   await app.register(sensible);
   await app.register(cors, {
-    origin: env.CORS_ORIGIN.split(",").map((value) => value.trim()),
+    origin: (origin, callback) => {
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+
+      const allowedOrigins = env.CORS_ORIGIN.split(",").map((value) => value.trim());
+      callback(null, allowedOrigins.includes(origin));
+    },
     credentials: true,
     methods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -35,6 +44,7 @@ export async function buildApp() {
   await app.register(productsRoutes,{prefix:"/api/v1/products"});
   await app.register(tablesRoutes,{prefix:"/api/v1/tables"});
   await app.register(cashRoutes,{prefix:"/api/v1/cash"});
+  await app.register(paymentsRoutes,{prefix:"/api/v1/orders"});
 
   app.setErrorHandler((error,request,reply)=>{
     if(error instanceof ZodError) return reply.code(422).send({error:{code:"VALIDATION_ERROR",message:"Dados inválidos.",details:error.flatten()}});

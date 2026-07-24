@@ -14,7 +14,7 @@ export type CartItem = Product & {
   quantity: number;
 };
 
-export type TableStatus = "free" | "open" | "payment" | "blocked";
+export type TableStatus = "free" | "open" | "payment" | "ready" | "blocked";
 
 export interface CafeTable {
   id: string;
@@ -44,7 +44,7 @@ export interface TableOrder {
     id: string;
     number: number;
     name: string | null;
-    status: "OPEN" | "PAYMENT";
+    status: "OPEN" | "PAYMENT" | "READY_TO_CLOSE";
     seats: number;
     people: number;
     openedAt: string | null;
@@ -60,7 +60,16 @@ export interface TableOrder {
     serviceChargePercentage: number;
     serviceCharge: number;
     total: number;
+    status: "OPEN" | "PAID";
   } | null;
+  payments?: Array<{
+    id: string;
+    method: "CASH" | "PIX" | "TEF_CREDIT" | "TEF_DEBIT" | "COURTESY";
+    amount: number;
+    approvedAt: string | null;
+  }>;
+  paidAmount: number;
+  balance: number;
   items: TableOrderItem[];
   subtotal: number;
   discount: number;

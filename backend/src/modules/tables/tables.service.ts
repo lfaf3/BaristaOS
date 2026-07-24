@@ -110,7 +110,7 @@ export async function setTableStatus(
   app: FastifyInstance,
   storeId: string,
   id: string,
-  status: "FREE" | "OPEN" | "PAYMENT" | "BLOCKED"
+  status: "FREE" | "OPEN" | "PAYMENT" | "READY_TO_CLOSE" | "BLOCKED"
 ) {
   await getTable(app, storeId, id);
 
@@ -128,7 +128,7 @@ export async function setTableStatus(
     }
   }
 
-  const data: { status: "FREE" | "OPEN" | "PAYMENT" | "BLOCKED"; openedAt?: Date | null } = { status };
+  const data: { status: "FREE" | "OPEN" | "PAYMENT" | "READY_TO_CLOSE" | "BLOCKED"; openedAt?: Date | null } = { status };
   if (status === "FREE") data.openedAt = null;
 
   await app.prisma.cafeTable.update({

@@ -45,6 +45,17 @@ export const ordersService = {
     });
   },
 
+  pay(
+    orderId: string,
+    payments: Array<{ method: "CASH" | "PIX" | "TEF_CREDIT" | "TEF_DEBIT" | "COURTESY"; amount: number }>
+  ): Promise<TableOrder> {
+    return apiRequest<TableOrderApiResponse>({
+      method: "POST",
+      url: `/orders/${orderId}/payments`,
+      data: { payments }
+    });
+  },
+
   deleteItem(tableId: string, itemId: string): Promise<TableOrder> {
     return apiRequest<TableOrderApiResponse>({
       method: "DELETE",

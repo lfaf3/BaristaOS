@@ -1,0 +1,16 @@
+#;
+Please;
+do
+    not;
+while (edit);
+this;
+file;
+manually;
+#;
+It;
+should;
+be;
+added in your;
+version - control;
+system(e.g., Git);
+provider = "postgresql";

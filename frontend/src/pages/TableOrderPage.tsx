@@ -9,6 +9,7 @@ import {
   Plus,
   ReceiptText,
   RefreshCw,
+  DoorOpen,
   ServerOff,
   Trash2,
   Users,
@@ -22,6 +23,7 @@ import { Topbar } from "../components/Topbar";
 import { TablePaymentModal, type OrderPaymentMethod } from "../components/TablePaymentModal";
 import { normalizeApiError } from "../services/api/api-error";
 import { ordersService } from "../services/api/orders.service";
+import { tablesService } from "../services/api/tables.service";
 import type { TableOrder, TableOrderItem } from "../types";
 import { formatCurrency } from "../utils/currency";
 
@@ -57,6 +59,7 @@ export function TableOrderPage() {
   const [closingOrder, setClosingOrder] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [payingOrder, setPayingOrder] = useState(false);
+  const [releasingTable, setReleasingTable] = useState(false);
 
   const isPayment = data?.table.status === "PAYMENT";
   const isReady = data?.table.status === "READY_TO_CLOSE";
@@ -245,6 +248,26 @@ export function TableOrderPage() {
       setActionError(normalizeApiError(cause).message);
     } finally {
       setClosingOrder(false);
+    }
+  }
+
+  async function handleReleaseTable() {
+    if (!id || !isReady || releasingTable) return;
+
+    const confirmed = window.confirm(
+      "Liberar esta mesa e deixá-la disponível para um novo atendimento?"
+    );
+    if (!confirmed) return;
+
+    setReleasingTable(true);
+    setActionError(null);
+    try {
+      await tablesService.release(id);
+      navigate("/mesas", { replace: true });
+    } catch (cause) {
+      setActionError(normalizeApiError(cause).message);
+    } finally {
+      setReleasingTable(false);
     }
   }
 
@@ -498,10 +521,24 @@ export function TableOrderPage() {
                       Receber pagamento
                     </button>
                   ) : (
-                    <div className="order-payment-next-step order-payment-next-step--ready">
-                      <Check size={22} />
-                      <span>Pagamento concluído · aguardando liberação</span>
-                    </div>
+                    <>
+                      <div className="order-payment-next-step order-payment-next-step--ready">
+                        <Check size={22} />
+                        <span>Pagamento concluído · mesa pronta para liberação</span>
+                      </div>
+                      <button
+                        className="button button--success order-close-button"
+                        disabled={releasingTable}
+                        onClick={() => void handleReleaseTable()}
+                      >
+                        {releasingTable ? (
+                          <RefreshCw size={18} className="icon-spin" />
+                        ) : (
+                          <DoorOpen size={18} />
+                        )}
+                        {releasingTable ? "Liberando mesa..." : "Liberar mesa"}
+                      </button>
+                    </>
                   )}
 
                   {(data.payments ?? []).length > 0 && (

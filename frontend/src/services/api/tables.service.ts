@@ -56,5 +56,14 @@ export const tablesService = {
     });
 
     return mapTable(table);
+  },
+
+  async release(id: string): Promise<CafeTable> {
+    const table = await apiRequest<TableApiResponse>({
+      method: "PATCH",
+      url: `/tables/${id}/release`
+    });
+
+    return mapTable(table);
   }
 };

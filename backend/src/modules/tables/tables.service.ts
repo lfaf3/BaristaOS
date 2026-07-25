@@ -138,3 +138,86 @@ export async function setTableStatus(
 
   return getTable(app, storeId, id);
 }
+
+export async function releaseTable(
+  app: FastifyInstance,
+  storeId: string,
+  id: string
+) {
+  await app.prisma.$transaction(async tx => {
+    const table = await tx.cafeTable.findFirst({
+      where: { id, storeId, active: true },
+      select: { id: true, status: true }
+    });
+
+    if (!table) {
+      throw new AppError("Mesa não encontrada.", 404, "TABLE_NOT_FOUND");
+    }
+
+    if (table.status !== "READY_TO_CLOSE") {
+      throw new AppError(
+        "A mesa precisa estar com o pagamento concluído para ser liberada.",
+        409,
+        "TABLE_NOT_READY_TO_CLOSE"
+      );
+    }
+
+    const order = await tx.order.findFirst({
+      where: { storeId, tableId: id, status: "PAID" },
+      orderBy: { openedAt: "desc" },
+      select: {
+        id: true,
+        total: true,
+        closedAt: true,
+        payments: {
+          where: { status: "APPROVED" },
+          select: { amount: true }
+        }
+      }
+    });
+
+    if (!order) {
+      throw new AppError(
+        "Não foi encontrada uma comanda paga para esta mesa.",
+        409,
+        "PAID_ORDER_NOT_FOUND"
+      );
+    }
+
+    const paidAmount = order.payments.reduce(
+      (sum, payment) => sum + Math.round(Number(payment.amount) * 100),
+      0
+    );
+    const orderTotal = Math.round(Number(order.total) * 100);
+
+    if (paidAmount < orderTotal) {
+      throw new AppError(
+        "A comanda ainda possui saldo pendente e não pode ser encerrada.",
+        409,
+        "ORDER_HAS_PENDING_BALANCE"
+      );
+    }
+
+    if (!order.closedAt) {
+      await tx.order.update({
+        where: { id: order.id },
+        data: { closedAt: new Date() }
+      });
+    }
+
+    const updated = await tx.cafeTable.updateMany({
+      where: { id, storeId, active: true, status: "READY_TO_CLOSE" },
+      data: { status: "FREE", openedAt: null }
+    });
+
+    if (updated.count === 0) {
+      throw new AppError(
+        "A mesa foi alterada por outro operador. Atualize o mapa de mesas.",
+        409,
+        "TABLE_CONCURRENT_UPDATE"
+      );
+    }
+  });
+
+  return getTable(app, storeId, id);
+}

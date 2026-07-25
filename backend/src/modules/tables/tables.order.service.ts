@@ -31,8 +31,11 @@ export async function getTableOrder(
     );
   }
 
+  const expectedOrderStatus =
+    table.status === "READY_TO_CLOSE" ? "PAID" : "OPEN";
+
   const order = await app.prisma.order.findFirst({
-    where: { storeId, tableId, status: { in: ["OPEN", "PAID"] } },
+    where: { storeId, tableId, status: expectedOrderStatus },
     orderBy: { openedAt: "desc" },
     select: {
       id: true,

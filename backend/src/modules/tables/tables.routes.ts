@@ -3,6 +3,7 @@ import {
   getTable,
   listTables,
   openTable,
+  releaseTable,
   setTableStatus
 } from "./tables.service.js";
 import {
@@ -72,6 +73,11 @@ export const tablesRoutes: FastifyPluginAsync = async app => {
   app.patch("/:id/open", async request => {
     const { id } = tableParamsSchema.parse(request.params);
     return openTable(app, request.user.storeId, id);
+  });
+
+  app.patch("/:id/release", async request => {
+    const { id } = tableParamsSchema.parse(request.params);
+    return releaseTable(app, request.user.storeId, id);
   });
 
   app.patch("/:id/status", async request => {

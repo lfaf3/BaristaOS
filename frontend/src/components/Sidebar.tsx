@@ -5,8 +5,12 @@ import {
   Plus,
   Settings
 } from "lucide-react";
-
+import { NavLink } from "react-router-dom";
 import { CafeBrand } from "./CafeBrand";
+
+function navClass({ isActive }: { isActive: boolean }) {
+  return `nav-item${isActive ? " nav-item--active" : ""}`;
+}
 
 export function Sidebar() {
   return (
@@ -14,34 +18,34 @@ export function Sidebar() {
       <CafeBrand />
 
       <nav className="sidebar__nav">
-        <button className="nav-item nav-item--active">
+        <NavLink to="/mesas" className={navClass}>
           <Grid2X2 size={19} />
           Mesas
-        </button>
+        </NavLink>
 
-        <button className="nav-item">
+        <NavLink to="/venda" className={navClass}>
           <Plus size={19} />
           Nova venda
-        </button>
+        </NavLink>
 
-        <button className="nav-item">
+        <NavLink to="/pedidos" className={navClass}>
           <Package size={19} />
           Pedidos
-        </button>
+        </NavLink>
 
-        <button className="nav-item">
+        <button className="nav-item" type="button" disabled>
           <Banknote size={19} />
           Caixa
         </button>
 
-        <button className="nav-item">
+        <button className="nav-item" type="button" disabled>
           <Settings size={19} />
           Configurações
         </button>
       </nav>
 
       <div className="sidebar__footer">
-        BaristaOS v1.1
+        BaristaOS v3.2.9
         <br />
         Sistema para cafeterias
       </div>

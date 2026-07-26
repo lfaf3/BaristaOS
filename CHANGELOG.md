@@ -28,3 +28,10 @@ Todas as mudanças relevantes do BaristaOS são registradas neste arquivo.
 
 ## [3.2.4]
 - Consulte `RELEASE-3.2.4.md`.
+
+## v3.2.9
+
+- Adicionado histórico de comandas encerradas.
+- Incluídos filtros por período e número da mesa.
+- Adicionado detalhamento de itens, pagamentos, desconto e taxa de serviço.
+- Menu lateral atualizado com navegação para Pedidos.

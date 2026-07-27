@@ -35,3 +35,20 @@ Todas as mudanças relevantes do BaristaOS são registradas neste arquivo.
 - Incluídos filtros por período e número da mesa.
 - Adicionado detalhamento de itens, pagamentos, desconto e taxa de serviço.
 - Menu lateral atualizado com navegação para Pedidos.
+
+## [3.3.0] - 2026-07-27
+
+### Adicionado
+- Dashboard gerencial com indicadores diários.
+- Comparação de faturamento e pedidos com o dia anterior.
+- Destaques de produto, pagamento e mesa.
+- Resumo operacional das mesas.
+- Impressão de comandas encerradas em formato de bobina de 80 mm.
+- Endpoint `GET /api/v1/dashboard/summary`.
+
+### Alterado
+- Menu lateral atualizado com acesso ao Dashboard.
+- Identificação visual da versão atualizada para v3.3.0.
+
+### Banco de dados
+- Nenhuma migration necessária.

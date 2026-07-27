@@ -1,6 +1,7 @@
 import {
   Banknote,
   Grid2X2,
+  LayoutDashboard,
   Package,
   Plus,
   Settings
@@ -18,6 +19,11 @@ export function Sidebar() {
       <CafeBrand />
 
       <nav className="sidebar__nav">
+        <NavLink to="/dashboard" className={navClass}>
+          <LayoutDashboard size={19} />
+          Dashboard
+        </NavLink>
+
         <NavLink to="/mesas" className={navClass}>
           <Grid2X2 size={19} />
           Mesas
@@ -45,7 +51,7 @@ export function Sidebar() {
       </nav>
 
       <div className="sidebar__footer">
-        BaristaOS v3.2.9
+        BaristaOS v3.3.0
         <br />
         Sistema para cafeterias
       </div>

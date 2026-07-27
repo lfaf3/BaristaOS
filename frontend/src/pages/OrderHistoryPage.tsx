@@ -5,6 +5,7 @@ import {
   ClipboardList,
   RefreshCw,
   Search,
+  Printer,
   ServerOff,
   X
 } from "lucide-react";
@@ -274,9 +275,16 @@ export function OrderHistoryPage() {
                 <span className="eyebrow">Comanda encerrada</span>
                 <h2>{selected?.table ? `Mesa ${selected.table.number}` : "Venda balcão"}</h2>
               </div>
-              <button type="button" className="history-modal-close" onClick={() => setSelected(null)}>
-                <X size={20} />
-              </button>
+              <div className="history-modal-actions">
+                {selected && (
+                  <button type="button" className="button button--soft history-print-button" onClick={() => window.print()}>
+                    <Printer size={17} /> Imprimir
+                  </button>
+                )}
+                <button type="button" className="history-modal-close" onClick={() => setSelected(null)} aria-label="Fechar detalhes">
+                  <X size={20} />
+                </button>
+              </div>
             </header>
 
             {detailLoading && <div className="history-modal-loading"><RefreshCw className="icon-spin" /> Carregando detalhes...</div>}

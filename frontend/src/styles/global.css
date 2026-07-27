@@ -1215,3 +1215,56 @@ h1, h2, h3 { letter-spacing: -0.045em; }
   .history-modal { max-height: calc(100vh - 20px); }
   .history-meta-grid { grid-template-columns: 1fr; }
 }
+
+/* Dashboard gerencial — v3.3.0 */
+.management-dashboard { display: grid; gap: 22px; }
+.dashboard-subtitle { margin: 7px 0 0; color: var(--muted); }
+.dashboard-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.dashboard-kpi { min-height: 164px; padding: 20px; display: flex; flex-direction: column; gap: 8px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); box-shadow: 0 8px 26px rgba(37, 27, 22, .05); }
+.dashboard-kpi__icon { width: 40px; height: 40px; margin-bottom: 3px; display: grid; place-items: center; border-radius: 12px; background: var(--surface-soft); color: var(--primary); }
+.dashboard-kpi > span { color: var(--muted); font-size: 13px; font-weight: 700; }
+.dashboard-kpi > strong { font-size: clamp(25px, 3vw, 34px); line-height: 1; letter-spacing: -.04em; }
+.dashboard-kpi > small { margin-top: auto; color: var(--muted); }
+.dashboard-change { width: fit-content; margin-top: auto; display: inline-flex; align-items: center; gap: 3px; font-size: 12px; font-weight: 700; }
+.dashboard-change--positive { color: #18794e; }
+.dashboard-change--negative { color: #b42318; }
+.dashboard-highlights { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.dashboard-highlight-card { min-height: 150px; padding: 20px; display: flex; flex-direction: column; gap: 10px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
+.dashboard-highlight-card__heading { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; font-weight: 700; }
+.dashboard-highlight-card > strong { margin-top: auto; font-size: 22px; }
+.dashboard-highlight-card > small, .dashboard-empty { color: var(--muted); }
+.dashboard-table-status { display: grid; grid-template-columns: repeat(3, 1fr); overflow: hidden; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
+.dashboard-table-status > div { padding: 18px 22px; display: flex; align-items: center; justify-content: space-between; gap: 16px; border-right: 1px solid var(--line); }
+.dashboard-table-status > div:last-child { border-right: 0; }
+.dashboard-table-status span { color: var(--muted); font-weight: 700; }
+.dashboard-table-status strong { font-size: 23px; }
+.history-modal-actions { display: flex; align-items: center; gap: 8px; }
+
+@media (max-width: 1120px) {
+  .dashboard-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 780px) {
+  .dashboard-highlights { grid-template-columns: 1fr; }
+  .dashboard-table-status { grid-template-columns: 1fr; }
+  .dashboard-table-status > div { border-right: 0; border-bottom: 1px solid var(--line); }
+  .dashboard-table-status > div:last-child { border-bottom: 0; }
+}
+@media (max-width: 560px) {
+  .dashboard-kpis { grid-template-columns: 1fr; }
+  .history-print-button { width: 40px; padding-inline: 0; font-size: 0; }
+}
+
+/* Impressão de comanda encerrada */
+@media print {
+  @page { size: 80mm auto; margin: 5mm; }
+  body { background: #fff !important; }
+  .sidebar, .dashboard-main, .history-modal-backdrop::before, .history-modal-close, .history-print-button { display: none !important; }
+  .history-modal-backdrop { position: static !important; display: block !important; padding: 0 !important; background: transparent !important; }
+  .history-modal { width: 100% !important; max-width: none !important; max-height: none !important; overflow: visible !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; }
+  .history-modal > header { position: static !important; padding: 0 0 12px !important; background: #fff !important; }
+  .history-modal-content { padding: 12px 0 0 !important; gap: 13px !important; }
+  .history-meta-grid { grid-template-columns: 1fr 1fr !important; }
+  .history-meta-grid > div, .history-totals { padding: 7px !important; background: #fff !important; border: 1px solid #ddd !important; }
+  .history-item, .history-payment { padding: 6px 0 !important; }
+  .history-modal, .history-modal * { color: #000 !important; }
+}

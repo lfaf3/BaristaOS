@@ -1,0 +1,192 @@
+.print-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  padding: 24px;
+  display: grid;
+  place-items: center;
+  background: rgba(35, 24, 20, .58);
+  backdrop-filter: blur(3px);
+}
+
+.print-modal {
+  width: min(760px, 100%);
+  max-height: calc(100vh - 48px);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  overflow: hidden;
+  border-radius: 20px;
+  background: var(--surface);
+  box-shadow: 0 24px 80px rgba(35, 24, 20, .3);
+}
+
+.print-modal__header,
+.print-modal__footer {
+  padding: 18px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: var(--surface);
+}
+
+.print-modal__header { border-bottom: 1px solid var(--line); align-items: flex-start; }
+.print-modal__footer { border-top: 1px solid var(--line); justify-content: flex-end; }
+.print-modal__header h2 { margin: 4px 0 0; }
+.print-modal__header p { margin: 5px 0 0; color: var(--muted); font-size: 13px; }
+
+.print-modal__body {
+  overflow: auto;
+  padding: 28px;
+  background: #ece8e4;
+}
+
+.receipt-preview-shell {
+  width: min(80mm, 100%);
+  margin: 0 auto;
+  padding: 4mm 3mm;
+  background: #fff;
+  box-shadow: 0 8px 28px rgba(35, 24, 20, .16);
+}
+
+.receipt {
+  width: 100%;
+  color: #111;
+  background: #fff;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.receipt__header,
+.receipt__footer {
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  text-align: center;
+}
+
+.receipt__header > strong { font-size: 16px; letter-spacing: .06em; }
+.receipt__logo { width: 42mm; max-height: 18mm; object-fit: contain; filter: grayscale(1) contrast(1.25); }
+.receipt__divider { margin: 8px 0; border-top: 1px dashed #111; }
+.receipt__meta { margin: 0; display: grid; gap: 3px; }
+.receipt__meta > div { display: flex; justify-content: space-between; gap: 10px; }
+.receipt__meta dt { color: #333; }
+.receipt__meta dd { margin: 0; text-align: right; font-weight: 700; }
+.receipt__section { display: grid; gap: 6px; }
+.receipt__section h3 { margin: 0; font: inherit; font-weight: 700; text-transform: uppercase; }
+.receipt__item { display: grid; gap: 1px; }
+.receipt__item-line,
+.receipt__payment,
+.receipt__totals > div { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.receipt__item-line span { min-width: 0; overflow-wrap: anywhere; }
+.receipt__item-line b,
+.receipt__payment b { white-space: nowrap; }
+.receipt__item small { color: #444; }
+.receipt__note { display: block; font-style: italic; overflow-wrap: anywhere; }
+.receipt__totals { display: grid; gap: 4px; }
+.receipt__grand-total { margin-top: 3px; padding-top: 6px; border-top: 1px solid #111; font-size: 14px; }
+.receipt__order-note { margin: 0; overflow-wrap: anywhere; }
+.receipt__footer { margin-top: 8px; }
+.receipt__footer span { color: #555; font-size: 9px; }
+
+@media (max-width: 620px) {
+  .print-modal-backdrop { padding: 10px; }
+  .print-modal { max-height: calc(100vh - 20px); }
+  .print-modal__body { padding: 16px 10px; }
+  .print-modal__header p { display: none; }
+}
+
+.print-document { display: none; }
+
+@media print {
+  @page {
+    size: 80mm auto;
+    margin: 2mm;
+  }
+
+  html,
+  body {
+    width: 80mm !important;
+    min-width: 80mm !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+
+  body {
+    display: block !important;
+  }
+
+  body > * {
+    display: none !important;
+  }
+
+  body > .print-portal {
+    display: block !important;
+  }
+
+  .print-portal {
+    position: static !important;
+    width: 80mm !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+
+  /* O modal é apenas a interface de conferência e nunca é impresso. */
+  .print-modal-backdrop {
+    display: none !important;
+  }
+
+  /* Documento isolado, sem max-height, scrollbar ou recorte do modal. */
+  .print-document {
+    display: block !important;
+    position: static !important;
+    width: 76mm !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+
+  .print-document .receipt {
+    display: block !important;
+    width: 76mm !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    color: #000 !important;
+    background: #fff !important;
+    box-shadow: none !important;
+  }
+
+  .print-document .receipt__section,
+  .print-document .receipt__totals,
+  .print-document .receipt__payment,
+  .print-document .receipt__item,
+  .print-document .receipt__footer {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .print-document .receipt__logo {
+    filter: grayscale(1) contrast(1.4) !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+}

@@ -5,7 +5,6 @@ import {
   ClipboardList,
   RefreshCw,
   Search,
-  Printer,
   ServerOff,
   X
 } from "lucide-react";
@@ -13,6 +12,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { Sidebar } from "../components/Sidebar";
 import { Topbar } from "../components/Topbar";
+import { PrintModal } from "../print/PrintModal";
 import { normalizeApiError } from "../services/api/api-error";
 import {
   orderHistoryService,
@@ -67,6 +67,7 @@ export function OrderHistoryPage() {
   const [selected, setSelected] = useState<OrderHistoryDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState<string | null>(null);
+  const [printOrder, setPrintOrder] = useState<OrderHistoryDetail | null>(null);
 
   const loadOrders = useCallback(async () => {
     setLoading(true);
@@ -277,8 +278,12 @@ export function OrderHistoryPage() {
               </div>
               <div className="history-modal-actions">
                 {selected && (
-                  <button type="button" className="button button--soft history-print-button" onClick={() => window.print()}>
-                    <Printer size={17} /> Imprimir
+                  <button
+                    type="button"
+                    className="button button--soft history-print-button"
+                    onClick={() => setPrintOrder(selected)}
+                  >
+                    Pré-visualizar impressão
                   </button>
                 )}
                 <button type="button" className="history-modal-close" onClick={() => setSelected(null)} aria-label="Fechar detalhes">
@@ -332,6 +337,10 @@ export function OrderHistoryPage() {
             )}
           </section>
         </div>
+      )}
+
+      {printOrder && (
+        <PrintModal order={printOrder} onClose={() => setPrintOrder(null)} />
       )}
     </main>
   );

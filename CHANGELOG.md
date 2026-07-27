@@ -2,6 +2,17 @@
 
 Todas as mudanças relevantes do BaristaOS são registradas neste arquivo.
 
+## [3.3.1] - 2026-07-27
+
+### Corrigido
+- Pré-visualização de impressão em branco no histórico de comandas.
+- Impressão cortada pela altura do modal e barra de rolagem aparecendo no PDF.
+- Documento de impressão agora é renderizado em uma área independente, sem `overflow` ou limite de altura.
+
+### Adicionado
+- Print Engine com modal de pré-visualização, cupom reutilizável e CSS para bobina de 80 mm.
+- Renderização isolada por portal para imprimir somente o cupom.
+
 ## [3.2.8]
 
 ### Adicionado

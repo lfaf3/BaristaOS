@@ -2,6 +2,7 @@ import { RefreshCw, ServerOff } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useApp } from "../app/AppContext";
+import { OpenTableModal } from "../components/OpenTableModal";
 import { Sidebar } from "../components/Sidebar";
 import { TableCard } from "../components/TableCard";
 import { Topbar } from "../components/Topbar";
@@ -15,6 +16,7 @@ export function TablesPage() {
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [openingTableId, setOpeningTableId] = useState<string | null>(null);
+  const [pendingTableId, setPendingTableId] = useState<string | null>(null);
 
   const loadTables = useCallback(async () => {
     setLoading(true);
@@ -50,16 +52,21 @@ export function TablesPage() {
       return;
     }
 
-    setOpeningTableId(tableId);
     setActionError(null);
+    setPendingTableId(tableId);
+  }
 
+  async function confirmOpenTable(identifier: string) {
+    if (!pendingTableId) return;
+    setOpeningTableId(pendingTableId);
+    setActionError(null);
     try {
-      const updatedTable = await tablesService.open(tableId);
-      setTables(current =>
-        current.map(item => (item.id === updatedTable.id ? updatedTable : item))
-      );
+      const updatedTable = await tablesService.open(pendingTableId, identifier);
+      setTables(current => current.map(item => item.id === updatedTable.id ? updatedTable : item));
       setSelectedTable(updatedTable.number);
       setCounterSale(false);
+      setPendingTableId(null);
+      navigate(`/mesas/${updatedTable.id}`);
     } catch (cause) {
       setActionError(normalizeApiError(cause).message);
     } finally {
@@ -76,6 +83,7 @@ export function TablesPage() {
   const open = tables.filter(table => table.status === "open").length;
   const payment = tables.filter(table => table.status === "payment").length;
   const ready = tables.filter(table => table.status === "ready").length;
+  const pendingTable = tables.find(table => table.id === pendingTableId);
 
   return (
     <main className="dashboard-layout">
@@ -168,6 +176,14 @@ export function TablesPage() {
           )}
         </div>
       </section>
+      <OpenTableModal
+        open={pendingTableId !== null}
+        submitting={openingTableId !== null}
+        error={actionError}
+        defaultIdentifier={pendingTable ? `Mesa ${pendingTable.number}` : "Mesa"}
+        onClose={() => { if (!openingTableId) { setPendingTableId(null); setActionError(null); } }}
+        onConfirm={identifier => void confirmOpenTable(identifier)}
+      />
     </main>
   );
 }

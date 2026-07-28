@@ -224,7 +224,7 @@ export function OrderHistoryPage() {
                   {orders.map(order => (
                     <tr key={order.id}>
                       <td>{formatDateTime(order.closedAt)}</td>
-                      <td>{order.table ? `Mesa ${order.table.number}` : "Balcão"}</td>
+                      <td>{order.table ? (order.table.name ?? `Mesa ${order.table.number}`) : "Balcão"}</td>
                       <td>{order.itemCount}</td>
                       <td>{order.payments.map(payment => paymentLabel(payment.method)).join(" + ") || "—"}</td>
                       <td>{order.operator.name}</td>
@@ -274,7 +274,7 @@ export function OrderHistoryPage() {
             <header>
               <div>
                 <span className="eyebrow">Comanda encerrada</span>
-                <h2>{selected?.table ? `Mesa ${selected.table.number}` : "Venda balcão"}</h2>
+                <h2>{selected?.table ? (selected.table.name ?? `Mesa ${selected.table.number}`) : "Venda balcão"}</h2>
               </div>
               <div className="history-modal-actions">
                 {selected && (

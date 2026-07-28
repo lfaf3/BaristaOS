@@ -27,7 +27,7 @@ export function PrintModal({ order, onClose }: PrintModalProps) {
 
   function handlePrint() {
     const previousTitle = document.title;
-    const attendance = order.table ? `Mesa-${order.table.number}` : "Balcao";
+    const attendance = order.table ? (order.table.name ?? `Mesa-${order.table.number}`) : "Balcao";
     document.title = `DM-CAFFE-Comanda-${attendance}`;
 
     const restoreTitle = () => {

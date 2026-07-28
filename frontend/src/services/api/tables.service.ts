@@ -49,10 +49,11 @@ export const tablesService = {
     return tables.map(mapTable);
   },
 
-  async open(id: string): Promise<CafeTable> {
+  async open(id: string, identifier: string): Promise<CafeTable> {
     const table = await apiRequest<TableApiResponse>({
       method: "PATCH",
-      url: `/tables/${id}/open`
+      url: `/tables/${id}/open`,
+      data: { identifier }
     });
 
     return mapTable(table);

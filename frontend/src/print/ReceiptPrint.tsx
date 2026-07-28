@@ -40,7 +40,7 @@ export function ReceiptPrint({ order }: ReceiptPrintProps) {
       <div className="receipt__divider" />
 
       <dl className="receipt__meta">
-        <div><dt>Atendimento</dt><dd>{order.table ? `Mesa ${order.table.number}` : "Balcão"}</dd></div>
+        <div><dt>Atendimento</dt><dd>{order.table ? (order.table.name ?? `Mesa ${order.table.number}`) : "Balcão"}</dd></div>
         <div><dt>Operador</dt><dd>{order.operator.name}</dd></div>
         <div><dt>Abertura</dt><dd>{formatDateTime(order.openedAt)}</dd></div>
         <div><dt>Fechamento</dt><dd>{formatDateTime(order.closedAt)}</dd></div>

@@ -1,5 +1,23 @@
 # Changelog
 
+## v3.3.3
+
+### Added
+
+- Identificação personalizada na abertura do atendimento.
+- Sugestões rápidas de identificação.
+- Validação de identificadores duplicados em atendimentos ativos.
+- Snapshot da identificação na comanda para histórico e impressão.
+
+### Changed
+
+- Mesas liberadas ou canceladas removem a identificação temporária.
+- Campo de identificação passou a ser opcional; quando vazio, o sistema usa automaticamente o nome padrão da mesa.
+
+### Fixed
+
+- Tratamento de erros compatível com a resposta padrão do Fastify, exibindo a mensagem específica de duplicidade.
+
 Todas as mudanças relevantes do BaristaOS são registradas neste arquivo.
 
 ## [3.3.2] - 2026-07-28

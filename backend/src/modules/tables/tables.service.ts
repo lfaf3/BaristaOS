@@ -72,10 +72,15 @@ export async function getTable(app: FastifyInstance, storeId: string, id: string
   return mapTable(table);
 }
 
-export async function openTable(app: FastifyInstance, storeId: string, id: string) {
+export async function openTable(
+  app: FastifyInstance,
+  storeId: string,
+  id: string,
+  identifier: string
+) {
   const table = await app.prisma.cafeTable.findFirst({
     where: { id, storeId, active: true },
-    select: { id: true, status: true }
+    select: { id: true, number: true, status: true }
   });
 
   if (!table) {
@@ -90,9 +95,29 @@ export async function openTable(app: FastifyInstance, storeId: string, id: strin
     );
   }
 
+  const normalizedIdentifier = identifier.trim() || `Mesa ${table.number}`;
+
+  const duplicate = await app.prisma.cafeTable.findFirst({
+    where: {
+      storeId,
+      active: true,
+      status: { in: ["OPEN", "PAYMENT", "READY_TO_CLOSE"] },
+      name: { equals: normalizedIdentifier, mode: "insensitive" }
+    },
+    select: { id: true }
+  });
+
+  if (duplicate) {
+    throw new AppError(
+      "Já existe um atendimento aberto com esta identificação.",
+      409,
+      "ATTENDANCE_IDENTIFIER_IN_USE"
+    );
+  }
+
   const updated = await app.prisma.cafeTable.updateMany({
     where: { id, storeId, active: true, status: "FREE" },
-    data: { status: "OPEN", openedAt: new Date() }
+    data: { status: "OPEN", openedAt: new Date(), name: normalizedIdentifier }
   });
 
   if (updated.count === 0) {
@@ -128,8 +153,11 @@ export async function setTableStatus(
     }
   }
 
-  const data: { status: "FREE" | "OPEN" | "PAYMENT" | "READY_TO_CLOSE" | "BLOCKED"; openedAt?: Date | null } = { status };
-  if (status === "FREE") data.openedAt = null;
+  const data: { status: "FREE" | "OPEN" | "PAYMENT" | "READY_TO_CLOSE" | "BLOCKED"; openedAt?: Date | null; name?: string | null } = { status };
+  if (status === "FREE") {
+    data.openedAt = null;
+    data.name = null;
+  }
 
   await app.prisma.cafeTable.update({
     where: { id },
@@ -207,7 +235,7 @@ export async function releaseTable(
 
     const updated = await tx.cafeTable.updateMany({
       where: { id, storeId, active: true, status: "READY_TO_CLOSE" },
-      data: { status: "FREE", openedAt: null }
+      data: { status: "FREE", openedAt: null, name: null }
     });
 
     if (updated.count === 0) {

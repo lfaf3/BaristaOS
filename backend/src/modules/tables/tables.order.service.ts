@@ -153,7 +153,7 @@ export async function addTableOrderItem(
   await app.prisma.$transaction(async tx => {
     const table = await tx.cafeTable.findFirst({
       where: { id: tableId, storeId, active: true },
-      select: { id: true, status: true, openedAt: true }
+      select: { id: true, status: true, openedAt: true, name: true }
     });
 
     if (!table) {
@@ -204,7 +204,8 @@ export async function addTableOrderItem(
           tableId,
           cashSessionId: cashSession.id,
           operatorId,
-          status: "OPEN"
+          status: "OPEN",
+          attendanceLabel: table.name
         },
         select: { id: true, discount: true }
       });
@@ -373,7 +374,7 @@ export async function closeTableOrder(
   await app.prisma.$transaction(async tx => {
     const table = await tx.cafeTable.findFirst({
       where: { id: tableId, storeId, active: true },
-      select: { id: true, status: true, openedAt: true }
+      select: { id: true, status: true, openedAt: true, name: true }
     });
 
     if (!table) {
@@ -471,7 +472,7 @@ export async function cancelTableOrder(
   await app.prisma.$transaction(async tx => {
     const table = await tx.cafeTable.findFirst({
       where: { id: tableId, storeId, active: true },
-      select: { id: true, status: true, openedAt: true }
+      select: { id: true, status: true, openedAt: true, name: true }
     });
 
     if (!table) {
@@ -523,13 +524,14 @@ export async function cancelTableOrder(
           closedAt: cancelledAt,
           cancelledAt,
           cancelledById: operatorId,
-          cancellationReason: input.reason.trim()
+          cancellationReason: input.reason.trim(),
+          attendanceLabel: table.name
         }
       });
 
       await tx.cafeTable.update({
         where: { id: table.id },
-        data: { status: "FREE", openedAt: null }
+        data: { status: "FREE", openedAt: null, name: null }
       });
 
       return;
@@ -566,7 +568,7 @@ export async function cancelTableOrder(
 
     await tx.cafeTable.update({
       where: { id: table.id },
-      data: { status: "FREE", openedAt: null }
+      data: { status: "FREE", openedAt: null, name: null }
     });
   });
 

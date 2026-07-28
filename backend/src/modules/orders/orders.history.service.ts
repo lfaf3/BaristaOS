@@ -60,6 +60,7 @@ export async function listOrderHistory(
         openedAt: true,
         closedAt: true,
         notes: true,
+        attendanceLabel: true,
         table: { select: { id: true, number: true, name: true } },
         operator: { select: { id: true, name: true } },
         items: { select: { quantity: true } },
@@ -77,7 +78,7 @@ export async function listOrderHistory(
     data: orders.map(order => ({
       id: order.id,
       status: order.status,
-      table: order.table,
+      table: order.table ? { ...order.table, name: order.attendanceLabel ?? order.table.name } : null,
       operator: order.operator,
       guestCount: order.guestCount,
       itemCount: order.items.reduce((sum, item) => sum + item.quantity, 0),
@@ -124,6 +125,7 @@ export async function getOrderHistoryDetail(
       openedAt: true,
       closedAt: true,
       notes: true,
+      attendanceLabel: true,
       table: { select: { id: true, number: true, name: true } },
       operator: { select: { id: true, name: true } },
       items: {
@@ -152,7 +154,7 @@ export async function getOrderHistoryDetail(
   return {
     id: order.id,
     status: order.status,
-    table: order.table,
+    table: order.table ? { ...order.table, name: order.attendanceLabel ?? order.table.name } : null,
     operator: order.operator,
     guestCount: order.guestCount,
     subtotal: Number(order.subtotal),

@@ -1270,3 +1270,18 @@ h1, h2, h3 { letter-spacing: -0.045em; }
 .cancel-order-modal__body small { justify-self: end; color: var(--muted); font-weight: 400; }
 .cancel-order-modal__actions { padding: 0 24px 24px; display: flex; justify-content: flex-end; gap: 10px; }
 @media (max-width: 560px) { .cancel-order-modal__actions { flex-direction: column-reverse; } .cancel-order-modal__actions .button { width: 100%; justify-content: center; } }
+
+/* Sprint 3.3.3 — identificação personalizada do atendimento */
+.open-table-modal { width: min(520px, calc(100vw - 32px)); overflow: hidden; border-radius: 18px; background: var(--surface); box-shadow: 0 22px 70px rgba(35, 24, 20, .25); }
+.open-table-modal__header { padding: 22px 24px; display: grid; grid-template-columns: auto 1fr auto; align-items: start; gap: 14px; border-bottom: 1px solid var(--line); }
+.open-table-modal__header h2 { margin: 4px 0 0; }
+.open-table-modal__icon { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 14px; color: var(--espresso); background: rgba(106, 78, 59, .12); }
+.open-table-modal__body { padding: 22px 24px; display: grid; gap: 16px; }
+.open-table-modal__body label { display: grid; gap: 8px; font-weight: 700; }
+.open-table-modal__body input { width: 100%; padding: 13px 14px; border: 1px solid var(--line); border-radius: 12px; color: var(--espresso); background: var(--surface); font: inherit; }
+.open-table-modal__body input:focus { outline: 2px solid rgba(106, 78, 59, .18); border-color: var(--espresso); }
+.open-table-modal__body small { justify-self: end; color: var(--muted); font-weight: 400; }
+.open-table-modal__suggestions { display: flex; flex-wrap: wrap; gap: 8px; }
+.open-table-modal__suggestions button { padding: 8px 11px; border: 1px solid var(--line); border-radius: 999px; color: var(--espresso); background: var(--surface-soft); cursor: pointer; font: inherit; font-size: 13px; font-weight: 700; }
+.open-table-modal__suggestions button:hover { border-color: var(--espresso); }
+.open-table-modal__actions { padding: 0 24px 22px; display: flex; justify-content: flex-end; gap: 9px; }

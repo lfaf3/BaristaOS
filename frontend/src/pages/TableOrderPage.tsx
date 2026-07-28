@@ -2,6 +2,7 @@ import {
   ArrowLeft,
   Check,
   CircleDollarSign,
+  Ban,
   Clock3,
   LockKeyhole,
   Minus,
@@ -18,6 +19,7 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { AddProductModal } from "../components/AddProductModal";
+import { CancelOrderModal } from "../components/orders/CancelOrderModal";
 import { Sidebar } from "../components/Sidebar";
 import { Topbar } from "../components/Topbar";
 import { TablePaymentModal, type OrderPaymentMethod } from "../components/TablePaymentModal";
@@ -60,6 +62,8 @@ export function TableOrderPage() {
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [payingOrder, setPayingOrder] = useState(false);
   const [releasingTable, setReleasingTable] = useState(false);
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [cancellingOrder, setCancellingOrder] = useState(false);
 
   const isPayment = data?.table.status === "PAYMENT";
   const isReady = data?.table.status === "READY_TO_CLOSE";
@@ -248,6 +252,22 @@ export function TableOrderPage() {
       setActionError(normalizeApiError(cause).message);
     } finally {
       setClosingOrder(false);
+    }
+  }
+
+  async function handleCancelOrder(reason: string) {
+    if (!id || !data || !isEditable || data.items.length > 0 || cancellingOrder) return;
+
+    setCancellingOrder(true);
+    setActionError(null);
+    try {
+      await ordersService.cancel(id, reason);
+      setCancelModalOpen(false);
+      navigate("/mesas", { replace: true, state: { message: "Atendimento cancelado com sucesso." } });
+    } catch (cause) {
+      setActionError(normalizeApiError(cause).message);
+    } finally {
+      setCancellingOrder(false);
     }
   }
 
@@ -504,14 +524,25 @@ export function TableOrderPage() {
                   </dl>
 
                   {isEditable ? (
-                    <button
-                      className="button button--primary order-close-button"
-                      disabled={closingOrder || data.items.length === 0}
-                      onClick={() => void handleCloseOrder()}
-                    >
-                      {closingOrder ? <RefreshCw size={18} className="icon-spin" /> : <CircleDollarSign size={18} />}
-                      {closingOrder ? "Fechando conta..." : "Fechar conta"}
-                    </button>
+                    <div className="order-primary-actions">
+                      <button
+                        className="button button--primary order-close-button"
+                        disabled={closingOrder || data.items.length === 0}
+                        onClick={() => void handleCloseOrder()}
+                      >
+                        {closingOrder ? <RefreshCw size={18} className="icon-spin" /> : <CircleDollarSign size={18} />}
+                        {closingOrder ? "Fechando conta..." : "Fechar conta"}
+                      </button>
+                      {data.items.length === 0 && (
+                        <button
+                          className="button button--danger order-cancel-button"
+                          onClick={() => { setActionError(null); setCancelModalOpen(true); }}
+                        >
+                          <Ban size={18} />
+                          Cancelar atendimento
+                        </button>
+                      )}
+                    </div>
                   ) : isPayment ? (
                     <button
                       className="button button--success order-close-button"
@@ -572,6 +603,19 @@ export function TableOrderPage() {
         error={actionError}
         onClose={() => { if (!payingOrder) { setActionError(null); setPaymentModalOpen(false); } }}
         onConfirm={payments => void handlePayment(payments)}
+      />
+
+      <CancelOrderModal
+        open={cancelModalOpen && Boolean(isEditable) && (data?.items.length ?? 0) === 0}
+        submitting={cancellingOrder}
+        error={cancelModalOpen ? actionError : null}
+        onClose={() => {
+          if (!cancellingOrder) {
+            setActionError(null);
+            setCancelModalOpen(false);
+          }
+        }}
+        onConfirm={reason => void handleCancelOrder(reason)}
       />
 
       <AddProductModal

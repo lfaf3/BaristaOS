@@ -2,6 +2,20 @@
 
 Todas as mudanças relevantes do BaristaOS são registradas neste arquivo.
 
+## [3.3.2] - 2026-07-28
+
+### Adicionado
+- Cancelamento seguro de atendimento vazio com motivo obrigatório.
+- Auditoria do cancelamento com operador, data/hora e justificativa.
+- Endpoint `PATCH /api/v1/tables/:id/order/cancel`.
+
+### Alterado
+- Mesa cancelada retorna automaticamente ao status `FREE`.
+- Comanda cancelada recebe status `CANCELLED` sem afetar vendas ou faturamento.
+
+### Banco de dados
+- Migration para os campos `cancelled_at`, `cancelled_by_id` e `cancellation_reason` em pedidos.
+
 ## [3.3.1] - 2026-07-27
 
 ### Corrigido
@@ -63,3 +77,8 @@ Todas as mudanças relevantes do BaristaOS são registradas neste arquivo.
 
 ### Banco de dados
 - Nenhuma migration necessária.
+
+### Fixed — v3.3.2 homologação 1
+
+- Corrigido erro `OPEN_ORDER_NOT_FOUND` ao cancelar uma mesa aberta sem adicionar produtos.
+- Preservado o registro de auditoria para atendimentos vazios cancelados.

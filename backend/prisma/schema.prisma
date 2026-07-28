@@ -247,6 +247,9 @@ model Order {
   total         Decimal     @default(0) @db.Decimal(12, 2)
   openedAt      DateTime    @default(now()) @map("opened_at")
   closedAt      DateTime?   @map("closed_at")
+  cancelledAt   DateTime?   @map("cancelled_at")
+  cancelledById String?     @map("cancelled_by_id") @db.Uuid
+  cancellationReason String? @map("cancellation_reason")
   notes         String?
 
   store       Store       @relation(fields: [storeId], references: [id], onDelete: Restrict)

@@ -153,7 +153,7 @@ export async function addTableOrderItem(
   await app.prisma.$transaction(async tx => {
     const table = await tx.cafeTable.findFirst({
       where: { id: tableId, storeId, active: true },
-      select: { id: true, status: true }
+      select: { id: true, status: true, openedAt: true }
     });
 
     if (!table) {
@@ -373,7 +373,7 @@ export async function closeTableOrder(
   await app.prisma.$transaction(async tx => {
     const table = await tx.cafeTable.findFirst({
       where: { id: tableId, storeId, active: true },
-      select: { id: true, status: true }
+      select: { id: true, status: true, openedAt: true }
     });
 
     if (!table) {
@@ -459,4 +459,119 @@ export async function closeTableOrder(
   });
 
   return getTableOrder(app, storeId, tableId);
+}
+
+export async function cancelTableOrder(
+  app: FastifyInstance,
+  storeId: string,
+  operatorId: string,
+  tableId: string,
+  input: { reason: string }
+) {
+  await app.prisma.$transaction(async tx => {
+    const table = await tx.cafeTable.findFirst({
+      where: { id: tableId, storeId, active: true },
+      select: { id: true, status: true, openedAt: true }
+    });
+
+    if (!table) {
+      throw new AppError("Mesa não encontrada.", 404, "TABLE_NOT_FOUND");
+    }
+
+    if (table.status !== "OPEN") {
+      throw new AppError(
+        "Somente uma mesa em atendimento pode ser cancelada.",
+        409,
+        "TABLE_NOT_OPEN"
+      );
+    }
+
+    const order = await tx.order.findFirst({
+      where: { storeId, tableId, status: "OPEN" },
+      orderBy: { openedAt: "desc" },
+      select: {
+        id: true,
+        _count: { select: { items: true, payments: true } }
+      }
+    });
+
+    if (!order) {
+      const cashSession = await tx.cashSession.findFirst({
+        where: { storeId, status: "OPEN" },
+        orderBy: { openedAt: "desc" },
+        select: { id: true }
+      });
+
+      if (!cashSession) {
+        throw new AppError(
+          "Não foi possível registrar o cancelamento porque não há caixa aberto.",
+          409,
+          "CASH_NOT_OPEN"
+        );
+      }
+
+      const cancelledAt = new Date();
+
+      await tx.order.create({
+        data: {
+          storeId,
+          tableId,
+          cashSessionId: cashSession.id,
+          operatorId,
+          status: "CANCELLED",
+          openedAt: table.openedAt ?? cancelledAt,
+          closedAt: cancelledAt,
+          cancelledAt,
+          cancelledById: operatorId,
+          cancellationReason: input.reason.trim()
+        }
+      });
+
+      await tx.cafeTable.update({
+        where: { id: table.id },
+        data: { status: "FREE", openedAt: null }
+      });
+
+      return;
+    }
+
+    if (order._count.items > 0) {
+      throw new AppError(
+        "Não é possível cancelar um atendimento que possui itens.",
+        409,
+        "ORDER_HAS_ITEMS"
+      );
+    }
+
+    if (order._count.payments > 0) {
+      throw new AppError(
+        "Não é possível cancelar um atendimento que possui pagamentos.",
+        409,
+        "ORDER_HAS_PAYMENTS"
+      );
+    }
+
+    const cancelledAt = new Date();
+
+    await tx.order.update({
+      where: { id: order.id },
+      data: {
+        status: "CANCELLED",
+        closedAt: cancelledAt,
+        cancelledAt,
+        cancelledById: operatorId,
+        cancellationReason: input.reason.trim()
+      }
+    });
+
+    await tx.cafeTable.update({
+      where: { id: table.id },
+      data: { status: "FREE", openedAt: null }
+    });
+  });
+
+  return {
+    message: "Atendimento cancelado com sucesso.",
+    tableId
+  };
 }

@@ -56,6 +56,14 @@ export const ordersService = {
     });
   },
 
+  cancel(tableId: string, reason: string): Promise<{ message: string; tableId: string }> {
+    return apiRequest<{ message: string; tableId: string }>({
+      method: "PATCH",
+      url: `/tables/${tableId}/order/cancel`,
+      data: { reason }
+    });
+  },
+
   deleteItem(tableId: string, itemId: string): Promise<TableOrder> {
     return apiRequest<TableOrderApiResponse>({
       method: "DELETE",

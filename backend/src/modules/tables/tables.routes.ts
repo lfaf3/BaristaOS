@@ -8,6 +8,7 @@ import {
 } from "./tables.service.js";
 import {
   addTableOrderItem,
+  cancelTableOrder,
   closeTableOrder,
   deleteTableOrderItem,
   getTableOrder,
@@ -19,6 +20,7 @@ import {
 } from "./tables.schemas.js";
 import {
   addOrderItemSchema,
+  cancelTableOrderSchema,
   closeTableOrderSchema,
   orderItemParamsSchema,
   updateOrderItemSchema
@@ -68,6 +70,18 @@ export const tablesRoutes: FastifyPluginAsync = async app => {
     const { id } = tableParamsSchema.parse(request.params);
     const input = closeTableOrderSchema.parse(request.body);
     return closeTableOrder(app, request.user.storeId, id, input);
+  });
+
+  app.patch("/:id/order/cancel", async request => {
+    const { id } = tableParamsSchema.parse(request.params);
+    const input = cancelTableOrderSchema.parse(request.body);
+    return cancelTableOrder(
+      app,
+      request.user.storeId,
+      request.user.sub,
+      id,
+      input
+    );
   });
 
   app.patch("/:id/open", async request => {

@@ -25,3 +25,11 @@ export const closeTableOrderSchema = z.object({
   discount: z.coerce.number().min(0).max(999999.99).default(0),
   serviceChargePercentage: z.coerce.number().min(0).max(100).default(10)
 });
+
+export const cancelTableOrderSchema = z.object({
+  reason: z
+    .string()
+    .trim()
+    .min(3, "Informe um motivo com pelo menos 3 caracteres.")
+    .max(300, "O motivo deve ter no máximo 300 caracteres.")
+});

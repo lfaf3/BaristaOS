@@ -16,6 +16,7 @@ import { cashRoutes } from "./modules/cash/cash.routes.js";
 import { paymentsRoutes } from "./modules/payments/payments.routes.js";
 import { orderHistoryRoutes } from "./modules/orders/orders.history.routes.js";
 import { dashboardRoutes } from "./modules/dashboard/dashboard.routes.js";
+import { companyRoutes } from "./modules/company/company.routes.js";
 
 export async function buildApp() {
   const app=Fastify({
@@ -49,6 +50,7 @@ export async function buildApp() {
   await app.register(paymentsRoutes,{prefix:"/api/v1/orders"});
   await app.register(orderHistoryRoutes,{prefix:"/api/v1/orders"});
   await app.register(dashboardRoutes,{prefix:"/api/v1/dashboard"});
+  await app.register(companyRoutes,{prefix:"/api/v1/company"});
 
   app.setErrorHandler((error,request,reply)=>{
     if(error instanceof ZodError) return reply.code(422).send({error:{code:"VALIDATION_ERROR",message:"Dados inválidos.",details:error.flatten()}});

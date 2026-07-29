@@ -55,13 +55,38 @@ enum PaymentStatus {
 }
 
 model Company {
-  id        String   @id @default(uuid()) @db.Uuid
-  name      String
-  tradeName String   @map("trade_name")
-  document  String   @unique
-  active    Boolean  @default(true)
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id                 String   @id @default(uuid()) @db.Uuid
+  name               String
+  tradeName          String   @map("trade_name")
+  document           String   @unique
+  stateRegistration  String?  @map("state_registration")
+  taxRegime          String?  @map("tax_regime")
+  cnae               String?
+  postalCode         String?  @map("postal_code")
+  street             String?
+  addressNumber      String?  @map("address_number")
+  addressComplement  String?  @map("address_complement")
+  neighborhood       String?
+  city               String?
+  state              String?
+  phone               String?
+  whatsapp            String?
+  email               String?
+  website             String?
+  displayName         String?  @map("display_name")
+  logoDataUrl         String?  @map("logo_data_url") @db.Text
+  primaryColor        String   @default("#3F2C27") @map("primary_color")
+  receiptFooter       String   @default("Obrigado pela preferência!") @map("receipt_footer")
+  printLogo           Boolean  @default(true) @map("print_logo")
+  printDocument       Boolean  @default(true) @map("print_document")
+  printAddress        Boolean  @default(true) @map("print_address")
+  printPhone          Boolean  @default(true) @map("print_phone")
+  language            String   @default("pt-BR")
+  currency            String   @default("BRL")
+  timezone            String   @default("America/Fortaleza")
+  active              Boolean  @default(true)
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
 
   stores     Store[]
   users      User[]

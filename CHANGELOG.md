@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.3.5] - 2026-07-29
+
+### Adicionado
+- Módulo de configurações da empresa com dados cadastrais, endereço, contatos, identidade, impressão e sistema.
+- Upload de logomarca e personalização do nome exibido.
+- Personalização do comprovante com dados e preferências da loja.
+- Endpoint autenticado `GET/PUT /api/v1/company`.
+
+### Alterado
+- Identidade da barra lateral e comprovante passam a consumir as configurações da empresa.
+- Versão exibida atualizada para v3.3.5.
+
 ## v3.3.4
 
 ### Added
@@ -123,3 +135,23 @@ Todas as mudanças relevantes do BaristaOS são registradas neste arquivo.
 
 - Corrigido erro `OPEN_ORDER_NOT_FOUND` ao cancelar uma mesa aberta sem adicionar produtos.
 - Preservado o registro de auditoria para atendimentos vazios cancelados.
+
+## [3.3.5.1] - 2026-07-29
+
+### Corrigido
+- Cor principal configurada passou a controlar as variáveis visuais usadas em toda a interface.
+- Adicionada geração automática da tonalidade escura usada no hover dos componentes primários.
+
+
+## [3.3.5.2] - 2026-07-29
+
+### Adicionado
+- Presets de tema Espresso e Espresso Dark na configuração de identidade.
+- Opção de cor personalizada mantida.
+
+### Alterado
+- Espresso (`#3F2C27`) definido como padrão visual para novas configurações e fallback do sistema.
+- Versão exibida no menu lateral atualizada para v3.3.5.2.
+
+### Banco de dados
+- Nenhuma migration necessária.

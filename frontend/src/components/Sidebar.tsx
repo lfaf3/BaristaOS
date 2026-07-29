@@ -44,14 +44,14 @@ export function Sidebar() {
           Caixa
         </button>
 
-        <button className="nav-item" type="button" disabled>
+        <NavLink to="/configuracoes" className={navClass}>
           <Settings size={19} />
           Configurações
-        </button>
+        </NavLink>
       </nav>
 
       <div className="sidebar__footer">
-        BaristaOS v3.3.4
+        BaristaOS v3.3.5.2
         <br />
         Sistema para cafeterias
       </div>

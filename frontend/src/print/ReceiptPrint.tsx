@@ -1,5 +1,6 @@
 import type { OrderHistoryDetail, HistoryPaymentMethod } from "../services/api/order-history.service";
 import { formatCurrency } from "../utils/currency";
+import { useCompany } from "../app/CompanyContext";
 
 interface ReceiptPrintProps {
   order: OrderHistoryDetail;
@@ -25,15 +26,19 @@ function paymentLabel(method: HistoryPaymentMethod) {
 }
 
 export function ReceiptPrint({ order }: ReceiptPrintProps) {
+  const { company } = useCompany();
+  const displayName = company?.displayName || company?.tradeName || "DM CAFFÈ";
+  const address = [company?.street, company?.addressNumber, company?.neighborhood, company?.city, company?.state].filter(Boolean).join(", ");
   return (
     <article className="receipt" aria-label="Pré-visualização da comanda">
       <header className="receipt__header">
-        <img
-          className="receipt__logo"
-          src="/brands/dm-caffe-sidebar-logo.png"
-          alt="DM CAFFÈ"
-        />
-        <strong>DM CAFFÈ</strong>
+        {company?.printLogo !== false && (
+          <img className="receipt__logo" src={company?.logoDataUrl ?? "/brands/dm-caffe-sidebar-logo.png"} alt={displayName} />
+        )}
+        <strong>{displayName}</strong>
+        {company?.printDocument !== false && company?.document && <span>CNPJ: {company.document}</span>}
+        {company?.printAddress !== false && address && <span>{address}</span>}
+        {company?.printPhone !== false && company?.phone && <span>Tel.: {company.phone}</span>}
         <span>Comprovante de venda</span>
       </header>
 
@@ -98,7 +103,7 @@ export function ReceiptPrint({ order }: ReceiptPrintProps) {
 
       <footer className="receipt__footer">
         <div className="receipt__divider" />
-        <strong>Obrigado pela preferência!</strong>
+        <strong>{company?.receiptFooter || "Obrigado pela preferência!"}</strong>
         <span>BaristaOS</span>
       </footer>
     </article>

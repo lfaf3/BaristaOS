@@ -22,6 +22,7 @@ import { AddProductModal } from "../components/AddProductModal";
 import { CancelOrderModal } from "../components/orders/CancelOrderModal";
 import { Sidebar } from "../components/Sidebar";
 import { Topbar } from "../components/Topbar";
+import { useToast } from "../components/feedback/ToastProvider";
 import { TablePaymentModal, type OrderPaymentMethod } from "../components/TablePaymentModal";
 import { normalizeApiError } from "../services/api/api-error";
 import { ordersService } from "../services/api/orders.service";
@@ -47,6 +48,7 @@ function parseMoney(value: string) {
 export function TableOrderPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const toast = useToast();
   const [data, setData] = useState<TableOrder | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -124,8 +126,11 @@ export function TableOrderPage() {
       const updated = await ordersService.addItem(id, input);
       setData(updated);
       setProductModalOpen(false);
+      toast.success("Produto adicionado à comanda.");
     } catch (cause) {
-      setActionError(normalizeApiError(cause).message);
+      const message = normalizeApiError(cause).message;
+      setActionError(message);
+      toast.error(message);
     } finally {
       setAddingProduct(false);
     }
@@ -143,8 +148,11 @@ export function TableOrderPage() {
     setActionError(null);
     try {
       setData(await ordersService.updateItem(id, item.id, { quantity }));
+      toast.success("Quantidade atualizada.");
     } catch (cause) {
-      setActionError(normalizeApiError(cause).message);
+      const message = normalizeApiError(cause).message;
+      setActionError(message);
+      toast.error(message);
     } finally {
       setBusyItemId(null);
     }
@@ -157,12 +165,15 @@ export function TableOrderPage() {
     setActionError(null);
     try {
       setData(await ordersService.deleteItem(id, item.id));
+      toast.success("Produto removido da comanda.");
       if (editingNotesItemId === item.id) {
         setEditingNotesItemId(null);
         setNotesDraft("");
       }
     } catch (cause) {
-      setActionError(normalizeApiError(cause).message);
+      const message = normalizeApiError(cause).message;
+      setActionError(message);
+      toast.error(message);
     } finally {
       setBusyItemId(null);
     }
@@ -192,8 +203,11 @@ export function TableOrderPage() {
         })
       );
       cancelEditingNotes();
+      toast.success("Observação salva.");
     } catch (cause) {
-      setActionError(normalizeApiError(cause).message);
+      const message = normalizeApiError(cause).message;
+      setActionError(message);
+      toast.error(message);
     } finally {
       setBusyItemId(null);
     }
@@ -208,8 +222,11 @@ export function TableOrderPage() {
       const updated = await ordersService.pay(data.order.id, payments);
       setData(updated);
       setPaymentModalOpen(false);
+      toast.success("Pagamento registrado com sucesso.");
     } catch (cause) {
-      setActionError(normalizeApiError(cause).message);
+      const message = normalizeApiError(cause).message;
+      setActionError(message);
+      toast.error(message);
     } finally {
       setPayingOrder(false);
     }
@@ -219,7 +236,9 @@ export function TableOrderPage() {
     if (!id || !data || !isEditable || closingOrder) return;
 
     if (data.items.length === 0) {
-      setActionError("Adicione ao menos um item antes de fechar a conta.");
+      const message = "Adicione ao menos um item antes de fechar a conta.";
+      setActionError(message);
+      toast.warning(message);
       return;
     }
 
@@ -227,7 +246,9 @@ export function TableOrderPage() {
     const discountValue = parseMoney(discount);
 
     if (discountValue > data.subtotal + preview.service) {
-      setActionError("O desconto não pode ser maior que o valor da conta.");
+      const message = "O desconto não pode ser maior que o valor da conta.";
+      setActionError(message);
+      toast.warning(message);
       return;
     }
 
@@ -248,8 +269,11 @@ export function TableOrderPage() {
       setDiscount(updated.discount.toFixed(2).replace(".", ","));
       setEditingNotesItemId(null);
       setProductModalOpen(false);
+      toast.success("Conta fechada e enviada para pagamento.");
     } catch (cause) {
-      setActionError(normalizeApiError(cause).message);
+      const message = normalizeApiError(cause).message;
+      setActionError(message);
+      toast.error(message);
     } finally {
       setClosingOrder(false);
     }
@@ -265,7 +289,9 @@ export function TableOrderPage() {
       setCancelModalOpen(false);
       navigate("/mesas", { replace: true, state: { message: "Atendimento cancelado com sucesso." } });
     } catch (cause) {
-      setActionError(normalizeApiError(cause).message);
+      const message = normalizeApiError(cause).message;
+      setActionError(message);
+      toast.error(message);
     } finally {
       setCancellingOrder(false);
     }
@@ -283,9 +309,11 @@ export function TableOrderPage() {
     setActionError(null);
     try {
       await tablesService.release(id);
-      navigate("/mesas", { replace: true });
+      navigate("/mesas", { replace: true, state: { message: "Mesa liberada com sucesso." } });
     } catch (cause) {
-      setActionError(normalizeApiError(cause).message);
+      const message = normalizeApiError(cause).message;
+      setActionError(message);
+      toast.error(message);
     } finally {
       setReleasingTable(false);
     }

@@ -1,5 +1,28 @@
 # Changelog
 
+## v3.3.4
+
+### Added
+
+- Sistema global de notificações com toasts de sucesso, informação, atenção e erro.
+- Pesquisa rápida no mapa por número da mesa ou identificação personalizada.
+- Contador de resultados e estado vazio para pesquisas sem correspondência.
+
+### Changed
+
+- Operações principais da comanda agora exibem confirmação visual padronizada.
+- Botões mantêm estado de carregamento e permanecem bloqueados durante requisições.
+- Mensagens conhecidas do backend são traduzidas para textos operacionais mais claros.
+- Identificação visual da versão atualizada para v3.3.4.
+
+### Fixed
+
+- Redução do risco de ações duplicadas durante abertura, edição, pagamento e liberação de mesas.
+
+### Banco de dados
+
+- Nenhuma migration necessária.
+
 ## v3.3.3
 
 ### Added

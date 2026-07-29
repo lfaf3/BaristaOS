@@ -9,6 +9,13 @@ interface BackendErrorBody {
 export class ApiError extends Error {
   constructor(message:string, public readonly status?:number, public readonly code="API_ERROR", public readonly details?:unknown){super(message);this.name="ApiError";}
 }
+const friendlyMessages: Record<string, string> = {
+  ATTENDANCE_LABEL_ALREADY_EXISTS: "Já existe um atendimento aberto com esta identificação.",
+  OPEN_ORDER_NOT_FOUND: "Nenhuma comanda aberta foi encontrada para esta mesa.",
+  ORDER_HAS_ITEMS: "Não é possível cancelar um atendimento que possui itens.",
+  ORDER_HAS_PAYMENTS: "Não é possível cancelar um atendimento que possui pagamentos.",
+  NETWORK_ERROR: "Não foi possível conectar ao servidor. Verifique a conexão e tente novamente."
+};
 export function normalizeApiError(error:unknown):ApiError {
   if(error instanceof ApiError) return error;
   if(axios.isAxiosError<BackendErrorBody>(error)){
@@ -18,7 +25,7 @@ export function normalizeApiError(error:unknown):ApiError {
     const message=nestedError?.message ?? body?.message ?? "Não foi possível concluir a operação.";
     const code=nestedError?.code ?? body?.code ?? "HTTP_ERROR";
     const details=nestedError?.details ?? body?.details;
-    return new ApiError(message,error.response?.status,code,details);
+    return new ApiError(friendlyMessages[code] ?? message,error.response?.status,code,details);
   }
   if(error instanceof Error) return new ApiError(error.message);
   return new ApiError("Ocorreu um erro inesperado.");

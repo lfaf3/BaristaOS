@@ -51,7 +51,7 @@ export function Sidebar() {
       </nav>
 
       <div className="sidebar__footer">
-        BaristaOS v3.3.0
+        BaristaOS v3.3.4
         <br />
         Sistema para cafeterias
       </div>

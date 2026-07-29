@@ -1,22 +1,26 @@
-import { RefreshCw, ServerOff } from "lucide-react";
+import { RefreshCw, Search, ServerOff, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useApp } from "../app/AppContext";
 import { OpenTableModal } from "../components/OpenTableModal";
 import { Sidebar } from "../components/Sidebar";
 import { TableCard } from "../components/TableCard";
 import { Topbar } from "../components/Topbar";
+import { useToast } from "../components/feedback/ToastProvider";
 import { normalizeApiError } from "../services/api/api-error";
 import { tablesService } from "../services/api/tables.service";
 
 export function TablesPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const toast = useToast();
   const { tables, setTables, setSelectedTable, setCounterSale } = useApp();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [openingTableId, setOpeningTableId] = useState<string | null>(null);
   const [pendingTableId, setPendingTableId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
 
   const loadTables = useCallback(async () => {
     setLoading(true);
@@ -35,6 +39,13 @@ export function TablesPage() {
   useEffect(() => {
     void loadTables();
   }, [loadTables]);
+
+  useEffect(() => {
+    const state = location.state as { message?: string } | null;
+    if (!state?.message) return;
+    toast.success(state.message);
+    navigate(location.pathname, { replace: true, state: null });
+  }, [location.pathname, location.state, navigate, toast]);
 
   async function handleTableClick(tableId: string) {
     const table = tables.find(item => item.id === tableId);
@@ -66,9 +77,12 @@ export function TablesPage() {
       setSelectedTable(updatedTable.number);
       setCounterSale(false);
       setPendingTableId(null);
+      toast.success(`${updatedTable.name ?? `Mesa ${updatedTable.number}`} aberta com sucesso.`);
       navigate(`/mesas/${updatedTable.id}`);
     } catch (cause) {
-      setActionError(normalizeApiError(cause).message);
+      const message = normalizeApiError(cause).message;
+      setActionError(message);
+      toast.error(message);
     } finally {
       setOpeningTableId(null);
     }
@@ -84,6 +98,14 @@ export function TablesPage() {
   const payment = tables.filter(table => table.status === "payment").length;
   const ready = tables.filter(table => table.status === "ready").length;
   const pendingTable = tables.find(table => table.id === pendingTableId);
+  const normalizedSearch = search.trim().toLocaleLowerCase("pt-BR");
+  const filteredTables = normalizedSearch
+    ? tables.filter(table => {
+        const defaultName = `mesa ${table.number}`;
+        const customName = table.name?.toLocaleLowerCase("pt-BR") ?? "";
+        return defaultName.includes(normalizedSearch) || customName.includes(normalizedSearch);
+      })
+    : tables;
 
   return (
     <main className="dashboard-layout">
@@ -131,6 +153,28 @@ export function TablesPage() {
             </div>
           )}
 
+          {tables.length > 0 && (
+            <div className="tables-toolbar">
+              <label className="tables-search">
+                <Search size={18} />
+                <input
+                  value={search}
+                  onChange={event => setSearch(event.target.value)}
+                  placeholder="Pesquisar por número ou identificação..."
+                  aria-label="Pesquisar mesas e atendimentos"
+                />
+                {search && (
+                  <button type="button" aria-label="Limpar pesquisa" onClick={() => setSearch("")}>
+                    <X size={16} />
+                  </button>
+                )}
+              </label>
+              <span className="tables-result-count">
+                {filteredTables.length} de {tables.length} mesas
+              </span>
+            </div>
+          )}
+
           {loading && tables.length === 0 && (
             <div className="tables-grid" aria-label="Carregando mesas">
               {Array.from({ length: 12 }, (_, index) => (
@@ -162,9 +206,17 @@ export function TablesPage() {
             </div>
           )}
 
-          {tables.length > 0 && (
+          {tables.length > 0 && filteredTables.length === 0 && (
+            <div className="tables-empty-search">
+              <Search size={36} strokeWidth={1.5} />
+              <strong>Nenhum atendimento encontrado</strong>
+              <span>Tente pesquisar por outro número ou identificação.</span>
+            </div>
+          )}
+
+          {filteredTables.length > 0 && (
             <div className="tables-grid">
-              {tables.map(table => (
+              {filteredTables.map(table => (
                 <TableCard
                   key={table.id}
                   table={table}

@@ -1,3 +1,10 @@
+# v3.3.6.1
+
+## Fixed
+
+- Corrigida a ausência de rolagem vertical no Dashboard em telas desktop.
+- Ajustado o comportamento responsivo da área principal.
+
 # Changelog
 
 ## [3.3.5] - 2026-07-29
@@ -152,6 +159,24 @@ Todas as mudanças relevantes do BaristaOS são registradas neste arquivo.
 ### Alterado
 - Espresso (`#3F2C27`) definido como padrão visual para novas configurações e fallback do sistema.
 - Versão exibida no menu lateral atualizada para v3.3.5.2.
+
+### Banco de dados
+- Nenhuma migration necessária.
+
+## [3.3.6] - 2026-07-29
+
+### Adicionado
+- Dashboard inteligente com gráfico de vendas dos últimos sete dias.
+- Meta diária e barra de progresso.
+- Top 10 de produtos por quantidade e faturamento.
+- Indicadores operacionais e gráfico de situação das mesas.
+- Alertas de mesas demoradas e pedidos sem movimentação.
+- Feed de atividades recentes.
+- Atualização automática a cada 60 segundos e skeletons de carregamento.
+
+### Alterado
+- Endpoint de resumo do dashboard ampliado com dados gerenciais e operacionais.
+- Versão exibida no menu lateral atualizada para v3.3.6.
 
 ### Banco de dados
 - Nenhuma migration necessária.

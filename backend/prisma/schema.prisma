@@ -54,6 +54,20 @@ enum PaymentStatus {
   CANCELLED
 }
 
+enum InventoryUnit {
+  KG
+  G
+  L
+  ML
+  UNIT
+}
+
+enum InventoryMovementType {
+  ENTRY
+  EXIT
+  ADJUSTMENT
+}
+
 model Company {
   id                 String   @id @default(uuid()) @db.Uuid
   name               String
@@ -92,6 +106,7 @@ model Company {
   users      User[]
   categories Category[]
   products   Product[]
+  inventoryItems InventoryItem[]
 
   @@map("companies")
 }
@@ -145,6 +160,7 @@ model User {
   refreshTokens RefreshToken[]
   cashSessions  CashSession[]
   orders        Order[]
+  inventoryMovements InventoryMovement[]
 
   @@unique([companyId, email])
   @@index([companyId])
@@ -328,4 +344,47 @@ model Payment {
   @@index([orderId])
   @@index([status])
   @@map("payments")
+}
+
+
+model InventoryItem {
+  id            String        @id @default(uuid()) @db.Uuid
+  companyId     String        @map("company_id") @db.Uuid
+  name          String
+  category      String
+  unit          InventoryUnit
+  currentStock  Decimal       @default(0) @map("current_stock") @db.Decimal(14, 3)
+  minimumStock  Decimal       @default(0) @map("minimum_stock") @db.Decimal(14, 3)
+  unitCost      Decimal       @default(0) @map("unit_cost") @db.Decimal(12, 2)
+  supplier      String?
+  active        Boolean       @default(true)
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  company       Company       @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  movements     InventoryMovement[]
+
+  @@unique([companyId, name])
+  @@index([companyId, active])
+  @@index([companyId, category])
+  @@map("inventory_items")
+}
+
+model InventoryMovement {
+  id             String                @id @default(uuid()) @db.Uuid
+  itemId         String                @map("item_id") @db.Uuid
+  userId         String                @map("user_id") @db.Uuid
+  type           InventoryMovementType
+  quantity       Decimal               @db.Decimal(14, 3)
+  previousStock  Decimal               @map("previous_stock") @db.Decimal(14, 3)
+  resultingStock Decimal               @map("resulting_stock") @db.Decimal(14, 3)
+  note           String?
+  createdAt      DateTime              @default(now()) @map("created_at")
+
+  item           InventoryItem         @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  user           User                  @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([itemId, createdAt])
+  @@index([userId])
+  @@map("inventory_movements")
 }

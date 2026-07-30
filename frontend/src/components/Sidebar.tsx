@@ -3,6 +3,7 @@ import {
   Grid2X2,
   LayoutDashboard,
   Package,
+  Boxes,
   Plus,
   Settings
 } from "lucide-react";
@@ -39,6 +40,11 @@ export function Sidebar() {
           Pedidos
         </NavLink>
 
+        <NavLink to="/estoque" className={navClass}>
+          <Boxes size={19} />
+          Estoque
+        </NavLink>
+
         <button className="nav-item" type="button" disabled>
           <Banknote size={19} />
           Caixa
@@ -51,7 +57,7 @@ export function Sidebar() {
       </nav>
 
       <div className="sidebar__footer">
-        BaristaOS v3.3.6
+        BaristaOS v3.3.7.1
         <br />
         Sistema para cafeterias
       </div>

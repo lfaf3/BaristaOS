@@ -180,3 +180,24 @@ Todas as mudanças relevantes do BaristaOS são registradas neste arquivo.
 
 ### Banco de dados
 - Nenhuma migration necessária.
+
+# v3.3.7
+
+## Added
+- Gestão de estoque fase 1.
+- Cadastro de insumos e unidades de medida.
+- Entradas, saídas e ajustes.
+- Histórico e auditoria de movimentações.
+- Alertas de estoque mínimo.
+- Indicadores e busca de estoque.
+
+# v3.3.7.1
+
+## Fixed
+- Altura e rolagem independentes para a tabela de itens e para a auditoria do estoque.
+- Correção da sobreposição visual causada pelo crescimento do histórico de movimentações.
+- Margens, espaçamento e exibição das labels no modal de novo item.
+- Rolagem interna e responsividade dos modais de estoque.
+
+## Database
+- Nenhuma migration necessária.

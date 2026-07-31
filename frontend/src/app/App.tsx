@@ -1,2 +1,50 @@
-import {Navigate,Route,Routes} from "react-router-dom";import {GuestRoute} from "../components/auth/GuestRoute";import {ProtectedRoute} from "../components/auth/ProtectedRoute";import {LoginPage} from "../pages/LoginPage";import {OpenCashPage} from "../pages/OpenCashPage";import {RushPage} from "../pages/RushPage";import {TablesPage} from "../pages/TablesPage";import {TableOrderPage} from "../pages/TableOrderPage";import {OrderHistoryPage} from "../pages/OrderHistoryPage";import {DashboardPage} from "../pages/DashboardPage";import {AppProvider} from "./AppContext";import {AuthProvider} from "./AuthContext";import {ToastProvider} from "../components/feedback/ToastProvider";import {CompanyProvider} from "./CompanyContext";import {CompanyPage} from "../pages/CompanyPage";import {InventoryPage} from "../pages/InventoryPage";
-export function App(){return <AuthProvider><ToastProvider><CompanyProvider><AppProvider><Routes><Route element={<GuestRoute/>}><Route path="/login" element={<LoginPage/>}/></Route><Route element={<ProtectedRoute/>}><Route path="/dashboard" element={<DashboardPage/>}/><Route path="/abrir-caixa" element={<OpenCashPage/>}/><Route path="/mesas" element={<TablesPage/>}/><Route path="/mesas/:id" element={<TableOrderPage/>}/><Route path="/venda" element={<RushPage/>}/><Route path="/pedidos" element={<OrderHistoryPage/>}/><Route path="/configuracoes" element={<CompanyPage/>}/><Route path="/estoque" element={<InventoryPage/>}/></Route><Route path="/" element={<Navigate to="/login" replace/>}/><Route path="*" element={<Navigate to="/" replace/>}/></Routes></AppProvider></CompanyProvider></ToastProvider></AuthProvider>}
+import { Navigate, Route, Routes } from "react-router-dom";
+import { GuestRoute } from "../components/auth/GuestRoute";
+import { ProtectedRoute } from "../components/auth/ProtectedRoute";
+import { LoginPage } from "../pages/LoginPage";
+import { OpenCashPage } from "../pages/OpenCashPage";
+import { RushPage } from "../pages/RushPage";
+import { TablesPage } from "../pages/TablesPage";
+import { TableOrderPage } from "../pages/TableOrderPage";
+import { OrderHistoryPage } from "../pages/OrderHistoryPage";
+import { DashboardPage } from "../pages/DashboardPage";
+import { AppProvider } from "./AppContext";
+import { AuthProvider } from "./AuthContext";
+import { ToastProvider } from "../components/feedback/ToastProvider";
+import { CompanyProvider } from "./CompanyContext";
+import { CompanyPage } from "../pages/CompanyPage";
+import { InventoryPage } from "../pages/InventoryPage";
+import SuppliersPage from "../pages/SuppliersPage";
+
+export function App() {
+  return (
+    <AuthProvider>
+      <ToastProvider>
+        <CompanyProvider>
+          <AppProvider>
+            <Routes>
+              <Route element={<GuestRoute />}>
+                <Route path="/login" element={<LoginPage />} />
+              </Route>
+
+              <Route element={<ProtectedRoute />}>
+                <Route path="/dashboard" element={<DashboardPage />} />
+                <Route path="/abrir-caixa" element={<OpenCashPage />} />
+                <Route path="/mesas" element={<TablesPage />} />
+                <Route path="/mesas/:id" element={<TableOrderPage />} />
+                <Route path="/venda" element={<RushPage />} />
+                <Route path="/pedidos" element={<OrderHistoryPage />} />
+                <Route path="/configuracoes" element={<CompanyPage />} />
+                <Route path="/estoque" element={<InventoryPage />} />
+                <Route path="/fornecedores" element={<SuppliersPage />} />
+              </Route>
+
+              <Route path="/" element={<Navigate to="/login" replace />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </AppProvider>
+        </CompanyProvider>
+      </ToastProvider>
+    </AuthProvider>
+  );
+}

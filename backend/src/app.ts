@@ -18,6 +18,7 @@ import { orderHistoryRoutes } from "./modules/orders/orders.history.routes.js";
 import { dashboardRoutes } from "./modules/dashboard/dashboard.routes.js";
 import { companyRoutes } from "./modules/company/company.routes.js";
 import { inventoryRoutes } from "./modules/inventory/inventory.routes.js";
+import suppliersModule from "./modules/suppliers";
 
 export async function buildApp() {
   const app=Fastify({
@@ -53,6 +54,9 @@ export async function buildApp() {
   await app.register(dashboardRoutes,{prefix:"/api/v1/dashboard"});
   await app.register(companyRoutes,{prefix:"/api/v1/company"});
   await app.register(inventoryRoutes,{prefix:"/api/v1/inventory"});
+  await app.register(suppliersModule, {
+  prefix: "/api/v1/suppliers",
+});
 
   app.setErrorHandler((error,request,reply)=>{
     if(error instanceof ZodError) return reply.code(422).send({error:{code:"VALIDATION_ERROR",message:"Dados inválidos.",details:error.flatten()}});
@@ -63,3 +67,4 @@ export async function buildApp() {
   app.setNotFoundHandler((_req,reply)=>reply.code(404).send({error:{code:"ROUTE_NOT_FOUND",message:"Rota não encontrada."}}));
   return app;
 }
+

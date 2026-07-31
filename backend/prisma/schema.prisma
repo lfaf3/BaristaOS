@@ -107,6 +107,7 @@ model Company {
   categories Category[]
   products   Product[]
   inventoryItems InventoryItem[]
+  suppliers      Supplier[]
 
   @@map("companies")
 }
@@ -356,18 +357,52 @@ model InventoryItem {
   currentStock  Decimal       @default(0) @map("current_stock") @db.Decimal(14, 3)
   minimumStock  Decimal       @default(0) @map("minimum_stock") @db.Decimal(14, 3)
   unitCost      Decimal       @default(0) @map("unit_cost") @db.Decimal(12, 2)
-  supplier      String?
+  supplierId    String?       @map("supplier_id") @db.Uuid
   active        Boolean       @default(true)
   createdAt     DateTime      @default(now()) @map("created_at")
   updatedAt     DateTime      @updatedAt @map("updated_at")
 
   company       Company       @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  supplier      Supplier?     @relation(fields: [supplierId], references: [id], onDelete: SetNull)
   movements     InventoryMovement[]
 
   @@unique([companyId, name])
   @@index([companyId, active])
   @@index([companyId, category])
   @@map("inventory_items")
+}
+
+model Supplier {
+  id                    String   @id @default(uuid()) @db.Uuid
+  companyId             String   @map("company_id") @db.Uuid
+  corporateName         String   @map("corporate_name")
+  tradeName             String   @map("trade_name")
+  document              String
+  stateRegistration     String?  @map("state_registration")
+  municipalRegistration String?  @map("municipal_registration")
+  contactName           String?  @map("contact_name")
+  phone                 String?
+  whatsapp              String?
+  email                 String?
+  zipCode               String?  @map("zip_code")
+  address               String?
+  number                String?
+  complement            String?
+  district              String?
+  city                  String?
+  state                 String?
+  notes                 String?
+  active                Boolean  @default(true)
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+  company               Company @relation(fields:[companyId], references:[id], onDelete: Restrict)
+  inventoryItems        InventoryItem[]
+  @@unique([companyId, document])
+  @@index([companyId])
+  @@index([tradeName])
+  @@index([corporateName])
+  @@index([city])
+  @@map("suppliers")
 }
 
 model InventoryMovement {

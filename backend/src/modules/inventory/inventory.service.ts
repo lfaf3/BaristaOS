@@ -21,15 +21,22 @@ export async function listInventory(app:FastifyInstance, companyId:string, query
   const where:any = { companyId };
   if (typeof query.active === "boolean") where.active=query.active; else where.active=true;
   if (query.category) where.category=query.category;
-  if (query.q) where.OR=[{name:{contains:query.q,mode:"insensitive"}},{category:{contains:query.q,mode:"insensitive"}},{supplier:{contains:query.q,mode:"insensitive"}}];
+  if (query.q) {
+    where.OR=[
+      {name:{contains:query.q,mode:"insensitive"}},
+      {category:{contains:query.q,mode:"insensitive"}},
+      {supplier:{is:{tradeName:{contains:query.q,mode:"insensitive"}}}},
+    ];
+  }
   const items=await app.prisma.inventoryItem.findMany({where,orderBy:[{category:"asc"},{name:"asc"}]});
   const data=items.map(serializeItem).filter((i:any)=>!query.lowStock||i.isLowStock);
   return {data,summary:{total:data.length,lowStock:data.filter((i:any)=>i.isLowStock).length,totalValue:data.reduce((s:number,i:any)=>s+i.currentStock*i.unitCost,0),categories:new Set(data.map((i:any)=>i.category)).size}};
 }
 export async function createInventoryItem(app:FastifyInstance, companyId:string, userId:string, input:CreateItem) {
   try {
+    const { supplier, ...rest } = input;
     return await app.prisma.$transaction(async tx=>{
-      const item=await tx.inventoryItem.create({data:{companyId,...input,supplier:input.supplier||null}});
+      const item=await tx.inventoryItem.create({data:{companyId,...rest,supplierId:supplier||null} as any});
       if(input.currentStock>0) await tx.inventoryMovement.create({data:{itemId:item.id,userId,type:"ADJUSTMENT",quantity:input.currentStock,previousStock:0,resultingStock:input.currentStock,note:"Saldo inicial"}});
       return serializeItem(item);
     });
@@ -39,8 +46,9 @@ export async function updateInventoryItem(app:FastifyInstance, companyId:string,
   const current=await app.prisma.inventoryItem.findFirst({where:{id,companyId}}); if(!current) throw new AppError("Item de estoque não encontrado.",404,"INVENTORY_ITEM_NOT_FOUND");
   const {currentStock:_ignored,...data}=input;
   const payload=Object.fromEntries(Object.entries(data).filter(([,value])=>value!==undefined)) as Record<string,unknown>;
-  if("supplier" in payload) payload.supplier=(payload.supplier as string|null|undefined)||null;
-  try { return serializeItem(await app.prisma.inventoryItem.update({where:{id},data:payload})); }
+  if("supplier" in payload) payload.supplierId=(payload.supplier as string|null|undefined)||null;
+  delete payload.supplier;
+  try { return serializeItem(await app.prisma.inventoryItem.update({where:{id},data:payload as any})); }
   catch(error:any){ if(error?.code==="P2002") throw new AppError("Já existe um item de estoque com esse nome.",409,"INVENTORY_ITEM_EXISTS"); throw error; }
 }
 export async function createMovement(app:FastifyInstance, companyId:string, userId:string, id:string, input:Movement) {

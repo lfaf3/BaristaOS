@@ -1,11 +1,12 @@
 import {
   Banknote,
+  Boxes,
   Grid2X2,
   LayoutDashboard,
   Package,
-  Boxes,
   Plus,
-  Settings
+  Settings,
+  Truck
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { CafeBrand } from "./CafeBrand";
@@ -45,6 +46,11 @@ export function Sidebar() {
           Estoque
         </NavLink>
 
+        <NavLink to="/fornecedores" className={navClass}>
+          <Truck size={19} />
+          Fornecedores
+        </NavLink>
+
         <button className="nav-item" type="button" disabled>
           <Banknote size={19} />
           Caixa
@@ -57,7 +63,7 @@ export function Sidebar() {
       </nav>
 
       <div className="sidebar__footer">
-        BaristaOS v3.3.7.1
+        BaristaOS v3.3.8.1
         <br />
         Sistema para cafeterias
       </div>

@@ -15,6 +15,7 @@ import { CompanyProvider } from "./CompanyContext";
 import { CompanyPage } from "../pages/CompanyPage";
 import { InventoryPage } from "../pages/InventoryPage";
 import SuppliersPage from "../pages/SuppliersPage";
+import { PurchasesPage } from "../pages/PurchasesPage";
 
 export function App() {
   return (
@@ -37,6 +38,7 @@ export function App() {
                 <Route path="/configuracoes" element={<CompanyPage />} />
                 <Route path="/estoque" element={<InventoryPage />} />
                 <Route path="/fornecedores" element={<SuppliersPage />} />
+                <Route path="/compras" element={<PurchasesPage />} />
               </Route>
 
               <Route path="/" element={<Navigate to="/login" replace />} />

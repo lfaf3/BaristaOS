@@ -6,6 +6,7 @@ import {
   Package,
   Plus,
   Settings,
+  ShoppingCart,
   Truck
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
@@ -51,6 +52,11 @@ export function Sidebar() {
           Fornecedores
         </NavLink>
 
+        <NavLink to="/compras" className={navClass}>
+          <ShoppingCart size={19} />
+          Compras
+        </NavLink>
+
         <button className="nav-item" type="button" disabled>
           <Banknote size={19} />
           Caixa
@@ -63,7 +69,7 @@ export function Sidebar() {
       </nav>
 
       <div className="sidebar__footer">
-        BaristaOS v3.3.8.1
+        BaristaOS v3.3.9
         <br />
         Sistema para cafeterias
       </div>

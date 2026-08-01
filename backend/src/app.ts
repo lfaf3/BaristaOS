@@ -18,6 +18,7 @@ import { orderHistoryRoutes } from "./modules/orders/orders.history.routes.js";
 import { dashboardRoutes } from "./modules/dashboard/dashboard.routes.js";
 import { companyRoutes } from "./modules/company/company.routes.js";
 import { inventoryRoutes } from "./modules/inventory/inventory.routes.js";
+import { purchasesRoutes } from "./modules/purchases/purchases.routes.js";
 import suppliersModule from "./modules/suppliers";
 
 export async function buildApp() {
@@ -54,6 +55,7 @@ export async function buildApp() {
   await app.register(dashboardRoutes,{prefix:"/api/v1/dashboard"});
   await app.register(companyRoutes,{prefix:"/api/v1/company"});
   await app.register(inventoryRoutes,{prefix:"/api/v1/inventory"});
+  await app.register(purchasesRoutes,{prefix:"/api/v1/purchases"});
   await app.register(suppliersModule, {
   prefix: "/api/v1/suppliers",
 });

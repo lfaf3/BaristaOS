@@ -172,6 +172,7 @@ model User {
   orders        Order[]
   inventoryMovements InventoryMovement[]
   purchaseOrdersCreated PurchaseOrder[]
+  purchaseReceiptsReceived PurchaseReceipt[]
 
   @@unique([companyId, email])
   @@index([companyId])
@@ -376,6 +377,7 @@ model InventoryItem {
   supplier      Supplier?     @relation(fields: [supplierId], references: [id], onDelete: SetNull)
   movements     InventoryMovement[]
   purchaseOrderItems PurchaseOrderItem[]
+  purchaseReceiptItems PurchaseReceiptItem[]
 
   @@unique([companyId, name])
   @@index([companyId, active])
@@ -430,6 +432,8 @@ model InventoryMovement {
 
   item           InventoryItem         @relation(fields: [itemId], references: [id], onDelete: Restrict)
   user           User                  @relation(fields: [userId], references: [id], onDelete: Restrict)
+  purchaseReceiptItemId String?        @unique @map("purchase_receipt_item_id") @db.Uuid
+  purchaseReceiptItem PurchaseReceiptItem? @relation(fields: [purchaseReceiptItemId], references: [id], onDelete: SetNull)
 
   @@index([itemId, createdAt])
   @@index([userId])
@@ -453,6 +457,7 @@ model PurchaseOrder {
   supplier  Supplier            @relation(fields: [supplierId], references: [id], onDelete: Restrict)
   createdBy User                @relation(fields: [createdById], references: [id], onDelete: Restrict)
   items     PurchaseOrderItem[]
+  receipts  PurchaseReceipt[]
 
   @@unique([companyId, number])
   @@index([companyId, status])
@@ -474,9 +479,49 @@ model PurchaseOrderItem {
 
   purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
   inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+  receiptItems  PurchaseReceiptItem[]
 
   @@unique([purchaseOrderId, inventoryItemId])
   @@index([purchaseOrderId])
   @@index([inventoryItemId])
   @@map("purchase_order_items")
+}
+
+model PurchaseReceipt {
+  id              String   @id @default(uuid()) @db.Uuid
+  purchaseOrderId String   @map("purchase_order_id") @db.Uuid
+  receivedById    String   @map("received_by_id") @db.Uuid
+  receivedAt      DateTime @default(now()) @map("received_at")
+  notes           String?
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  purchaseOrder PurchaseOrder         @relation(fields: [purchaseOrderId], references: [id], onDelete: Restrict)
+  receivedBy    User                  @relation(fields: [receivedById], references: [id], onDelete: Restrict)
+  items         PurchaseReceiptItem[]
+
+  @@index([purchaseOrderId, receivedAt])
+  @@index([receivedById])
+  @@map("purchase_receipts")
+}
+
+model PurchaseReceiptItem {
+  id                  String   @id @default(uuid()) @db.Uuid
+  purchaseReceiptId   String   @map("purchase_receipt_id") @db.Uuid
+  purchaseOrderItemId String   @map("purchase_order_item_id") @db.Uuid
+  inventoryItemId     String   @map("inventory_item_id") @db.Uuid
+  quantity            Decimal  @db.Decimal(14, 3)
+  unitCost            Decimal  @map("unit_cost") @db.Decimal(14, 2)
+  subtotal            Decimal  @db.Decimal(14, 2)
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  purchaseReceipt   PurchaseReceipt   @relation(fields: [purchaseReceiptId], references: [id], onDelete: Cascade)
+  purchaseOrderItem PurchaseOrderItem @relation(fields: [purchaseOrderItemId], references: [id], onDelete: Restrict)
+  inventoryItem     InventoryItem     @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+  movement          InventoryMovement?
+
+  @@unique([purchaseReceiptId, purchaseOrderItemId])
+  @@index([purchaseReceiptId])
+  @@index([purchaseOrderItemId])
+  @@index([inventoryItemId])
+  @@map("purchase_receipt_items")
 }

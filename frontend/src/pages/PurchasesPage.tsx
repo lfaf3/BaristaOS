@@ -8,6 +8,7 @@ import {
   Eye,
   FileClock,
   PackageCheck,
+  PackagePlus,
   Plus,
   RefreshCw,
   Search,
@@ -33,6 +34,10 @@ import {
   inventoryService,
   type InventoryItem,
 } from "../services/api/inventory.service";
+import {
+  purchaseReceiptsService,
+  type PurchaseReceipt,
+} from "../services/api/purchase-receipts.service";
 import { formatCurrency } from "../utils/currency";
 
 const statusLabels: Record<PurchaseOrderStatus, string> = {
@@ -60,6 +65,7 @@ export function PurchasesPage() {
   const [loading, setLoading] = useState(true);
   const [workingId, setWorkingId] = useState<string | null>(null);
   const [selected, setSelected] = useState<PurchaseOrder | null>(null);
+  const [receivingOrder, setReceivingOrder] = useState<PurchaseOrder | null>(null);
   const [newOrderOpen, setNewOrderOpen] = useState(false);
   const [filters, setFilters] = useState({
     q: "",
@@ -147,6 +153,17 @@ export function PurchasesPage() {
     } finally {
       setWorkingId(null);
     }
+  }
+
+  function receiveOrder(order: PurchaseOrder) {
+    setSelected(null);
+    setReceivingOrder(order);
+  }
+
+  async function refreshSelectedOrder(orderId: string) {
+    const updated = await purchasesService.get(orderId);
+    setSelected(updated);
+    await load();
   }
 
   return (
@@ -332,13 +349,27 @@ export function PurchasesPage() {
         />
       )}
 
-      {selected && (
+      {receivingOrder && (
+        <PurchaseReceiptModal
+          order={receivingOrder}
+          onClose={() => setReceivingOrder(null)}
+          onReceived={async () => {
+            const orderId = receivingOrder.id;
+            setReceivingOrder(null);
+            toast.success("Recebimento registrado e estoque atualizado.");
+            await refreshSelectedOrder(orderId);
+          }}
+        />
+      )}
+
+      {selected && !receivingOrder && (
         <PurchaseDetailsModal
           order={selected}
           working={workingId === selected.id}
           onClose={() => setSelected(null)}
           onSend={() => void sendOrder(selected)}
           onCancel={() => void cancelOrder(selected)}
+          onReceive={() => receiveOrder(selected)}
         />
       )}
     </main>
@@ -646,19 +677,430 @@ function StatusPill({ status }: { status: PurchaseOrderStatus }) {
   return <span className={`purchase-status purchase-status--${status.toLowerCase()}`}>{statusLabels[status]}</span>;
 }
 
+
+type ReceiptDraftItem = {
+  purchaseOrderItemId: string;
+  orderedQuantity: number;
+  previouslyReceived: number;
+  pendingQuantity: number;
+  quantity: string;
+  unitCost: string;
+  name: string;
+  unit: InventoryItem["unit"];
+};
+
+function PurchaseReceiptModal({
+  order,
+  onClose,
+  onReceived,
+}: {
+  order: PurchaseOrder;
+  onClose: () => void;
+  onReceived: () => Promise<void> | void;
+}) {
+  const toast = useToast();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [receivedAt, setReceivedAt] = useState(() => new Date().toISOString().slice(0, 10));
+  const [notes, setNotes] = useState("");
+  const [items, setItems] = useState<ReceiptDraftItem[]>([]);
+  const [receiptHistory, setReceiptHistory] = useState<PurchaseReceipt[]>([]);
+
+  useEffect(() => {
+    purchaseReceiptsService
+      .list(order.id)
+      .then((response) => {
+        setReceiptHistory(response.data);
+
+        const receivedByOrderItem = new Map<string, number>();
+        response.data.forEach((receipt) => {
+          receipt.items.forEach((item) => {
+            receivedByOrderItem.set(
+              item.purchaseOrderItemId,
+              (receivedByOrderItem.get(item.purchaseOrderItemId) ?? 0) + item.quantity,
+            );
+          });
+        });
+
+        setItems(
+          order.items.map((item) => {
+            const previouslyReceived = receivedByOrderItem.get(item.id) ?? 0;
+            const pendingQuantity = Math.max(0, item.quantity - previouslyReceived);
+
+            return {
+              purchaseOrderItemId: item.id,
+              orderedQuantity: item.quantity,
+              previouslyReceived,
+              pendingQuantity,
+              quantity: formatDecimalInput(pendingQuantity),
+              unitCost: formatDecimalInput(item.unitPrice),
+              name: item.inventoryItem.name,
+              unit: item.inventoryItem.unit,
+            };
+          }),
+        );
+      })
+      .catch((error) => toast.error(normalizeApiError(error).message))
+      .finally(() => setLoading(false));
+  }, [order, toast]);
+
+  const receivableItems = items.filter((item) => item.pendingQuantity > 0.0005);
+
+  const total = useMemo(
+    () =>
+      receivableItems.reduce((sum, item) => {
+        const quantity = parseDecimalInput(item.quantity);
+        const unitCost = parseDecimalInput(item.unitCost);
+        return sum + Math.max(0, quantity) * Math.max(0, unitCost);
+      }, 0),
+    [receivableItems],
+  );
+
+  function updateItem(
+    purchaseOrderItemId: string,
+    field: "quantity" | "unitCost",
+    value: string,
+  ) {
+    setItems((current) =>
+      current.map((item) =>
+        item.purchaseOrderItemId === purchaseOrderItemId
+          ? { ...item, [field]: value }
+          : item,
+      ),
+    );
+  }
+
+  function fillAllPending() {
+    setItems((current) =>
+      current.map((item) => ({
+        ...item,
+        quantity:
+          item.pendingQuantity > 0.0005
+            ? formatDecimalInput(item.pendingQuantity)
+            : "0",
+      })),
+    );
+  }
+
+  function clearQuantities() {
+    setItems((current) => current.map((item) => ({ ...item, quantity: "0" })));
+  }
+
+  async function submit(event: React.FormEvent) {
+    event.preventDefault();
+
+    const normalizedItems = receivableItems
+      .map((item) => ({
+        purchaseOrderItemId: item.purchaseOrderItemId,
+        quantity: parseDecimalInput(item.quantity),
+        unitCost: parseDecimalInput(item.unitCost),
+        pendingQuantity: item.pendingQuantity,
+      }))
+      .filter((item) => item.quantity > 0);
+
+    if (!normalizedItems.length) {
+      toast.warning("Informe a quantidade recebida de pelo menos um item.");
+      return;
+    }
+
+    if (
+      normalizedItems.some(
+        (item) =>
+          !Number.isFinite(item.quantity) ||
+          item.quantity <= 0 ||
+          item.quantity - item.pendingQuantity > 0.0005,
+      )
+    ) {
+      toast.warning("A quantidade recebida deve estar entre zero e o saldo pendente.");
+      return;
+    }
+
+    if (
+      normalizedItems.some(
+        (item) => !Number.isFinite(item.unitCost) || item.unitCost < 0,
+      )
+    ) {
+      toast.warning("Informe custos unitários válidos.");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await purchaseReceiptsService.create(order.id, {
+        receivedAt: receivedAt || undefined,
+        notes: notes.trim() || null,
+        items: normalizedItems.map(
+          ({ purchaseOrderItemId, quantity, unitCost }) => ({
+            purchaseOrderItemId,
+            quantity,
+            unitCost,
+          }),
+        ),
+      });
+
+      await onReceived();
+    } catch (error) {
+      toast.error(normalizeApiError(error).message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div
+      className="modal-backdrop"
+      onMouseDown={(event) =>
+        event.target === event.currentTarget && !saving && onClose()
+      }
+    >
+      <form className="receipt-modal" onSubmit={submit}>
+        <header>
+          <div>
+            <span className="eyebrow">Entrada de mercadorias</span>
+            <h2>Receber pedido {order.number}</h2>
+            <p>
+              {order.supplier.tradeName} · {order.items.length} item
+              {order.items.length === 1 ? "" : "s"} no pedido
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={saving}
+            aria-label="Fechar"
+          >
+            <X />
+          </button>
+        </header>
+
+        <div className="receipt-modal__content">
+          <section className="receipt-meta-grid">
+            <label className="purchase-form-field">
+              <span>Data do recebimento *</span>
+              <input
+                type="date"
+                value={receivedAt}
+                onChange={(event) => setReceivedAt(event.target.value)}
+                disabled={saving}
+                required
+              />
+            </label>
+
+            <div className="receipt-history-summary">
+              <span>Recebimentos anteriores</span>
+              <strong>{receiptHistory.length}</strong>
+            </div>
+
+            <div className="receipt-history-summary">
+              <span>Status atual</span>
+              <strong>{statusLabels[order.status]}</strong>
+            </div>
+          </section>
+
+          <section className="receipt-items-section">
+            <div className="purchase-form-section-heading">
+              <div>
+                <h3>Itens recebidos</h3>
+                <p>
+                  Informe somente o que chegou nesta entrega. O restante continuará pendente.
+                </p>
+              </div>
+              <div className="receipt-quick-actions">
+                <button
+                  className="button button--ghost"
+                  type="button"
+                  onClick={clearQuantities}
+                  disabled={saving || loading}
+                >
+                  Zerar
+                </button>
+                <button
+                  className="button button--soft"
+                  type="button"
+                  onClick={fillAllPending}
+                  disabled={saving || loading}
+                >
+                  Preencher pendências
+                </button>
+              </div>
+            </div>
+
+            {loading ? (
+              <div className="receipt-loading">
+                <RefreshCw className="icon-spin" size={20} />
+                Carregando saldos pendentes...
+              </div>
+            ) : receivableItems.length ? (
+              <div className="receipt-items-list">
+                {receivableItems.map((item) => {
+                  const quantity = parseDecimalInput(item.quantity);
+                  const unitCost = parseDecimalInput(item.unitCost);
+
+                  return (
+                    <div className="receipt-item-row" key={item.purchaseOrderItemId}>
+                      <div className="receipt-item-info">
+                        <strong>{item.name}</strong>
+                        <span>
+                          Pedido: {formatQuantity(item.orderedQuantity)} {unitLabel(item.unit)}
+                          {item.previouslyReceived > 0 && (
+                            <>
+                              {" "}· já recebido: {formatQuantity(item.previouslyReceived)} {unitLabel(item.unit)}
+                            </>
+                          )}
+                        </span>
+                        <small>
+                          Pendente: {formatQuantity(item.pendingQuantity)} {unitLabel(item.unit)}
+                        </small>
+                      </div>
+
+                      <label className="purchase-form-field">
+                        <span>Recebido agora</span>
+                        <input
+                          inputMode="decimal"
+                          value={item.quantity}
+                          onChange={(event) =>
+                            updateItem(
+                              item.purchaseOrderItemId,
+                              "quantity",
+                              event.target.value,
+                            )
+                          }
+                          disabled={saving}
+                        />
+                      </label>
+
+                      <label className="purchase-form-field">
+                        <span>Custo unitário</span>
+                        <input
+                          inputMode="decimal"
+                          value={item.unitCost}
+                          onChange={(event) =>
+                            updateItem(
+                              item.purchaseOrderItemId,
+                              "unitCost",
+                              event.target.value,
+                            )
+                          }
+                          disabled={saving}
+                        />
+                      </label>
+
+                      <div className="receipt-item-subtotal">
+                        <span>Subtotal</span>
+                        <strong>
+                          {formatCurrency(
+                            Math.max(0, quantity) * Math.max(0, unitCost),
+                          )}
+                        </strong>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="purchases-empty receipt-empty">
+                <PackageCheck size={36} />
+                <strong>Pedido totalmente recebido</strong>
+                <span>Não existem quantidades pendentes para este pedido.</span>
+              </div>
+            )}
+          </section>
+
+          <section>
+            <label className="purchase-form-field">
+              <span>Observações do recebimento</span>
+              <textarea
+                value={notes}
+                onChange={(event) => setNotes(event.target.value)}
+                rows={4}
+                maxLength={1000}
+                placeholder="Ex.: entrega parcial, lote, validade ou divergências."
+                disabled={saving}
+              />
+            </label>
+          </section>
+        </div>
+
+        <footer>
+          <div className="purchase-form-total">
+            <span>Valor recebido nesta entrega</span>
+            <strong>{formatCurrency(total)}</strong>
+          </div>
+          <div>
+            <button
+              className="button button--ghost"
+              type="button"
+              onClick={onClose}
+              disabled={saving}
+            >
+              Cancelar
+            </button>
+            <button
+              className="button button--primary"
+              type="submit"
+              disabled={saving || loading || !receivableItems.length}
+            >
+              <PackagePlus size={17} />
+              {saving ? "Registrando..." : "Confirmar recebimento"}
+            </button>
+          </div>
+        </footer>
+      </form>
+    </div>
+  );
+}
+
+function parseDecimalInput(value: string) {
+  const normalized = value.trim().replace(/\s/g, "").replace(",", ".");
+  return Number(normalized);
+}
+
+function formatDecimalInput(value: number) {
+  return String(Number(value.toFixed(3))).replace(".", ",");
+}
+
 function PurchaseDetailsModal({
   order,
   working,
   onClose,
   onSend,
   onCancel,
+  onReceive,
 }: {
   order: PurchaseOrder;
   working: boolean;
   onClose: () => void;
   onSend: () => void;
   onCancel: () => void;
+  onReceive: () => void;
 }) {
+  const toast = useToast();
+  const [receipts, setReceipts] = useState<PurchaseReceipt[]>([]);
+  const [loadingReceipts, setLoadingReceipts] = useState(true);
+
+  useEffect(() => {
+    purchaseReceiptsService
+      .list(order.id)
+      .then((response) => setReceipts(response.data))
+      .catch((error) => toast.error(normalizeApiError(error).message))
+      .finally(() => setLoadingReceipts(false));
+  }, [order.id, toast]);
+
+  const receivedByOrderItem = useMemo(() => {
+    const totals = new Map<string, number>();
+
+    receipts.forEach((receipt) => {
+      receipt.items.forEach((item) => {
+        totals.set(
+          item.purchaseOrderItemId,
+          (totals.get(item.purchaseOrderItemId) ?? 0) + item.quantity,
+        );
+      });
+    });
+
+    return totals;
+  }, [receipts]);
+
   return (
     <div className="modal-backdrop" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
       <article className="purchase-details-modal">
@@ -681,8 +1123,20 @@ function PurchaseDetailsModal({
               <tbody>
                 {order.items.map((item) => (
                   <tr key={item.id}>
-                    <td><strong>{item.inventoryItem.name}</strong><span>{item.inventoryItem.category}</span></td>
-                    <td>{formatQuantity(item.quantity)} {unitLabel(item.inventoryItem.unit)}</td>
+                    <td>
+                      <strong>{item.inventoryItem.name}</strong>
+                      <span>{item.inventoryItem.category}</span>
+                    </td>
+                    <td>
+                      {formatQuantity(item.quantity)} {unitLabel(item.inventoryItem.unit)}
+                      {receipts.length > 0 && (
+                        <small className="purchase-received-caption">
+                          Recebido: {formatQuantity(receivedByOrderItem.get(item.id) ?? 0)} {unitLabel(item.inventoryItem.unit)}
+                          {" · "}
+                          Pendente: {formatQuantity(Math.max(0, item.quantity - (receivedByOrderItem.get(item.id) ?? 0)))} {unitLabel(item.inventoryItem.unit)}
+                        </small>
+                      )}
+                    </td>
                     <td>{formatCurrency(item.unitPrice)}</td>
                     <td><b>{formatCurrency(item.subtotal)}</b></td>
                   </tr>
@@ -692,6 +1146,56 @@ function PurchaseDetailsModal({
             </table>
           </div>
 
+          <section className="purchase-receipt-history">
+            <div className="purchase-receipt-history__heading">
+              <div>
+                <span className="eyebrow">Auditoria de recebimentos</span>
+                <h3>Histórico de entradas</h3>
+              </div>
+              <strong>{receipts.length}</strong>
+            </div>
+
+            {loadingReceipts ? (
+              <div className="receipt-loading">
+                <RefreshCw className="icon-spin" size={18} />
+                Carregando recebimentos...
+              </div>
+            ) : receipts.length ? (
+              <div className="purchase-receipt-history__list">
+                {receipts.map((receipt) => (
+                  <article key={receipt.id} className="purchase-receipt-history__card">
+                    <header>
+                      <div>
+                        <strong>{formatDateTime(receipt.receivedAt)}</strong>
+                        <span>Recebido por {receipt.receivedBy.name}</span>
+                      </div>
+                      <b>{formatCurrency(receipt.items.reduce((sum, item) => sum + item.subtotal, 0))}</b>
+                    </header>
+
+                    <div className="purchase-receipt-history__items">
+                      {receipt.items.map((item) => (
+                        <div key={item.id}>
+                          <span>{item.inventoryItem.name}</span>
+                          <strong>
+                            {formatQuantity(item.quantity)} {unitLabel(item.inventoryItem.unit)}
+                            {" · "}
+                            {formatCurrency(item.unitCost)}
+                          </strong>
+                        </div>
+                      ))}
+                    </div>
+
+                    {receipt.notes && <p>{receipt.notes}</p>}
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <div className="purchases-empty purchases-empty--compact">
+                Nenhum recebimento registrado para este pedido.
+              </div>
+            )}
+          </section>
+
           {order.notes && <div className="purchase-notes"><span>Observações</span><p>{order.notes}</p></div>}
         </div>
 
@@ -700,6 +1204,12 @@ function PurchaseDetailsModal({
           <div>
             {["DRAFT", "SENT"].includes(order.status) && (
               <button className="button button--danger-soft" type="button" onClick={onCancel} disabled={working}><Ban size={16} />Cancelar</button>
+            )}
+            {["SENT", "PARTIALLY_RECEIVED"].includes(order.status) && (
+              <button className="button button--primary" type="button" onClick={onReceive} disabled={working}>
+                <PackagePlus size={16} />
+                Receber mercadoria
+              </button>
             )}
             {order.status === "DRAFT" && (
               <button className="button button--primary" type="button" onClick={onSend} disabled={working}><Send size={16} />Enviar pedido</button>
@@ -713,6 +1223,13 @@ function PurchaseDetailsModal({
 
 function formatDate(value: string) {
   return new Date(value).toLocaleDateString("pt-BR");
+}
+
+function formatDateTime(value: string) {
+  return new Date(value).toLocaleString("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  });
 }
 
 function formatQuantity(value: number) {

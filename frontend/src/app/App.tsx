@@ -17,6 +17,7 @@ import { InventoryPage } from "../pages/InventoryPage";
 import SuppliersPage from "../pages/SuppliersPage";
 import { PurchasesPage } from "../pages/PurchasesPage";
 import { RecipesPage } from "../pages/RecipesPage";
+import { PaymentSettingsPage } from "../pages/PaymentSettingsPage";
 
 export function App() {
   return (
@@ -37,6 +38,7 @@ export function App() {
                 <Route path="/venda" element={<RushPage />} />
                 <Route path="/pedidos" element={<OrderHistoryPage />} />
                 <Route path="/configuracoes" element={<CompanyPage />} />
+                <Route path="/configuracoes/pagamentos" element={<PaymentSettingsPage />} />
                 <Route path="/estoque" element={<InventoryPage />} />
                 <Route path="/fornecedores" element={<SuppliersPage />} />
                 <Route path="/compras" element={<PurchasesPage />} />

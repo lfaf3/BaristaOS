@@ -22,6 +22,7 @@ import { purchasesRoutes } from "./modules/purchases/purchases.routes.js";
 import { purchaseReceiptsRoutes } from "./modules/purchase-receipts/purchase-receipts.routes.js";
 import { recipesRoutes } from "./modules/recipes/recipes.routes.js";
 import suppliersModule from "./modules/suppliers";
+import { tefRoutes } from "./modules/tef/tef.routes.js";
 
 export async function buildApp() {
   const app=Fastify({
@@ -53,6 +54,7 @@ export async function buildApp() {
   await app.register(tablesRoutes,{prefix:"/api/v1/tables"});
   await app.register(cashRoutes,{prefix:"/api/v1/cash"});
   await app.register(paymentsRoutes,{prefix:"/api/v1/orders"});
+  await app.register(tefRoutes,{prefix:"/api/v1/orders"});
   await app.register(orderHistoryRoutes,{prefix:"/api/v1/orders"});
   await app.register(dashboardRoutes,{prefix:"/api/v1/dashboard"});
   await app.register(companyRoutes,{prefix:"/api/v1/company"});
@@ -73,4 +75,3 @@ export async function buildApp() {
   app.setNotFoundHandler((_req,reply)=>reply.code(404).send({error:{code:"ROUTE_NOT_FOUND",message:"Rota não encontrada."}}));
   return app;
 }
-

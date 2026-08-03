@@ -1,127 +1,85 @@
-import { Check, LoaderCircle, Printer, X } from "lucide-react";
+import { RotateCcw, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useApp } from "../app/AppContext";
-import { formatCurrency } from "../utils/currency";
-
-type Stage = "confirm" | "tef" | "approved" | "receipt";
+import { paymentService, type PaymentResponse } from "../services/api/payment.service";
+import { PaymentProgress } from "./PaymentProgress";
 
 interface Props {
   open: boolean;
+  response: PaymentResponse | null;
+  onProgress: (response: PaymentResponse) => void;
   onClose: () => void;
+  onRetry: () => Promise<void>;
   onComplete: () => void;
 }
 
-export function PaymentModal({ open, onClose, onComplete }: Props) {
+export function PaymentModal({ open, response, onProgress, onClose, onRetry, onComplete }: Props) {
   const { cart, paymentMethod, subtotal, selectedTable, counterSale } = useApp();
-  const [stage, setStage] = useState<Stage>("confirm");
+  const [advancing, setAdvancing] = useState(false);
+  const authorized = response?.status === "AUTHORIZED";
+  const failed = response ? ["FAILED", "CANCELLED", "TIMEOUT", "COMMUNICATION_ERROR"].includes(response.status) : false;
+  const busy = Boolean(response && ["CREATED", "WAITING_DEVICE", "CARD_INSERTED", "PROCESSING", "CONFIRMED"].includes(response.status));
+
+  const contextLabel = counterSale ? "Balcão" : selectedTable ? `Mesa ${String(selectedTable).padStart(2, "0")}` : "Venda";
+  const receipt = useMemo(() => ({
+    context: contextLabel,
+    paymentMethod,
+    total: subtotal,
+    items: cart.map(item => ({ name: item.name, quantity: item.quantity, total: item.price * item.quantity }))
+  }), [cart, contextLabel, paymentMethod, subtotal]);
 
   useEffect(() => {
-    if (!open) return;
-    setStage(paymentMethod === "TEF" ? "tef" : "confirm");
+    if (open && authorized && paymentService.getSettings().autoConfirm && !advancing) void confirmSale();
+  }, [open, authorized, advancing, response?.transactionId]);
 
-    if (paymentMethod === "TEF") {
-      const timer = window.setTimeout(() => setStage("approved"), 2200);
-      return () => window.clearTimeout(timer);
+  useEffect(() => { if (!open) setAdvancing(false); }, [open]);
+
+  if (!open || !response) return null;
+
+  async function confirmSale() {
+    if (!response || response.status !== "AUTHORIZED" || advancing) return;
+    setAdvancing(true);
+    const confirmed = await paymentService.confirmPayment(response.transactionId, onProgress);
+    if (confirmed.status !== "CONFIRMED") {
+      setAdvancing(false);
+      return;
     }
-  }, [open, paymentMethod]);
 
-  const contextLabel = counterSale
-    ? "Balcão"
-    : selectedTable
-      ? `Mesa ${String(selectedTable).padStart(2, "0")}`
-      : "Venda";
+    // v3.5.0: emitir NFC-e, armazenar XML e imprimir DANFE neste ponto.
+    // Se a venda falhar após a emissão, cancelar via FiscalIntegrationService.
+    console.info("[PaymentReceiptPlaceholder]", { ...receipt, payment: confirmed });
+    const finished = await paymentService.finishTransaction(response.transactionId, onProgress);
+    if (finished.status === "FINISHED") window.setTimeout(onComplete, 650);
+  }
 
-  const receipt = useMemo(() => {
-    const lines = cart
-      .map(item => `${String(item.quantity).padStart(2, "0")}x ${item.name} — ${formatCurrency(item.price * item.quantity)}`)
-      .join("\n");
-
-    return `DM CAFFÈ
-BARISTAOS FRONTEND v1.0
-----------------------------------------
-${contextLabel}
-Operador: Diego
-Pagamento: ${paymentMethod}
-----------------------------------------
-${lines}
-----------------------------------------
-TOTAL: ${formatCurrency(subtotal)}
-----------------------------------------
-Obrigado pela preferência!`;
-  }, [cart, contextLabel, paymentMethod, subtotal]);
-
-  if (!open) return null;
-
-  function finishReceipt() {
-    onComplete();
+  async function cancelSale() {
+    if (!response) return;
+    await paymentService.cancelPayment(response.transactionId, onProgress);
+    onClose();
   }
 
   return (
-    <div className="modal-backdrop">
-      <div className="modal-card">
+    <div className="modal-backdrop payment-modal-backdrop" role="dialog" aria-modal="true" aria-live="polite">
+      <div className="modal-card payment-flow-modal">
         <div className="modal-card__header">
-          <div>
-            <span className="eyebrow">Fechamento</span>
-            <h2>
-              {stage === "tef" && "Cartão via TEF"}
-              {stage === "approved" && "Pagamento aprovado"}
-              {stage === "receipt" && "Venda concluída"}
-              {stage === "confirm" && `Pagamento em ${paymentMethod}`}
-            </h2>
-          </div>
-          <button className="icon-button" onClick={onClose}><X size={18} /></button>
+          <div><span className="eyebrow">Pagamento</span><h2>{response.message}</h2></div>
+          {!busy && !advancing && failed && <button className="icon-button" onClick={() => void cancelSale()} aria-label="Cancelar venda"><X size={18} /></button>}
         </div>
 
         <div className="modal-card__body">
-          {stage === "confirm" && (
-            <div className="payment-confirmation">
-              <span>Total a receber</span>
-              <strong>{formatCurrency(subtotal)}</strong>
-              <p>Confirme o recebimento para concluir a venda de <b>{contextLabel}</b>.</p>
-            </div>
-          )}
-
-          {stage === "tef" && (
-            <div className="tef-state">
-              <LoaderCircle className="spinner" size={58} />
-              <h3>Processando no PinPad</h3>
-              <p>Insira, aproxime ou passe o cartão.</p>
-            </div>
-          )}
-
-          {stage === "approved" && (
-            <div className="tef-state">
-              <div className="approved-icon"><Check size={36} /></div>
-              <h3>Pagamento aprovado</h3>
-              <p>NSU 483920 · Autorização 914286</p>
-            </div>
-          )}
-
-          {stage === "receipt" && <pre className="receipt">{receipt}</pre>}
+          <PaymentProgress
+            status={response.status}
+            message={response.message}
+            provider={response.provider}
+            authorizationCode={response.authorizationCode}
+            session={response.session}
+          />
+          {failed && <small>A estrutura aceita negação, cancelamento, timeout e perda de comunicação.</small>}
         </div>
 
         <div className="modal-card__actions">
-          {stage === "confirm" && (
-            <>
-              <button className="button button--soft" onClick={onClose}>Voltar</button>
-              <button className="button button--success" onClick={() => setStage("receipt")}>Confirmar recebimento</button>
-            </>
-          )}
-
-          {stage === "approved" && (
-            <button className="button button--success" onClick={() => setStage("receipt")}>Concluir venda</button>
-          )}
-
-          {stage === "receipt" && (
-            <>
-              <button className="button button--soft" onClick={() => window.print()}><Printer size={17} /> Imprimir</button>
-              <button className="button button--primary" onClick={finishReceipt}>Voltar às mesas</button>
-            </>
-          )}
-
-          {stage === "tef" && (
-            <button className="button button--danger" onClick={onClose}>Cancelar operação</button>
-          )}
+          {authorized && <button className="button button--success" disabled={advancing} onClick={() => void confirmSale()}>OK</button>}
+          {failed && <><button className="button button--soft" onClick={() => void cancelSale()}>Cancelar venda</button><button className="button button--primary" onClick={() => void onRetry()}><RotateCcw size={17} /> Tentar novamente</button></>}
         </div>
       </div>
     </div>

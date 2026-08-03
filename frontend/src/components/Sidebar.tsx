@@ -7,6 +7,7 @@ import {
   Package,
   Plus,
   Settings,
+  CreditCard,
   ShoppingCart,
   Truck
 } from "lucide-react";
@@ -71,6 +72,10 @@ export function Sidebar() {
         <NavLink to="/configuracoes" className={navClass}>
           <Settings size={19} />
           Configurações
+        </NavLink>
+        <NavLink to="/configuracoes/pagamentos" className={navClass}>
+          <CreditCard size={19} />
+          Pagamentos
         </NavLink>
       </nav>
 

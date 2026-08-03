@@ -14,6 +14,11 @@ const friendlyMessages: Record<string, string> = {
   OPEN_ORDER_NOT_FOUND: "Nenhuma comanda aberta foi encontrada para esta mesa.",
   ORDER_HAS_ITEMS: "Não é possível cancelar um atendimento que possui itens.",
   ORDER_HAS_PAYMENTS: "Não é possível cancelar um atendimento que possui pagamentos.",
+  TEF_TRANSACTION_IN_PROGRESS: "Já existe uma transação de cartão em andamento. Consulte-a antes de tentar novamente.",
+  TEF_AMOUNT_MISMATCH: "O pagamento no cartão deve quitar exatamente o saldo da conta.",
+  TEF_PROVIDER_NOT_AVAILABLE: "O provedor TEF configurado não está disponível.",
+  TEF_DISABLED: "O TEF está desabilitado para esta loja.",
+  TEF_IDEMPOTENCY_CONFLICT: "Não foi possível reutilizar esta tentativa de pagamento.",
   NETWORK_ERROR: "Não foi possível conectar ao servidor. Verifique a conexão e tente novamente."
 };
 export function normalizeApiError(error:unknown):ApiError {

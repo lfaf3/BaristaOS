@@ -8,6 +8,7 @@ type DraftPayment = {
   id: string;
   method: OrderPaymentMethod;
   amount: string;
+  installments?: number;
 };
 
 interface Props {
@@ -16,7 +17,7 @@ interface Props {
   submitting: boolean;
   error: string | null;
   onClose: () => void;
-  onConfirm: (payments: Array<{ method: OrderPaymentMethod; amount: number }>) => void;
+  onConfirm: (payments: Array<{ method: OrderPaymentMethod; amount: number; installments?: number }>) => void;
 }
 
 const methodLabels: Record<OrderPaymentMethod, string> = {
@@ -49,12 +50,23 @@ export function TablePaymentModal({ open, total, submitting, error, onClose, onC
     [payments]
   );
   const balance = Math.round((total - paid) * 100) / 100;
-  const valid = payments.length > 0 && payments.every(payment => parseMoney(payment.amount) > 0) && balance === 0;
+  const hasTef = payments.some(payment => payment.method === "TEF_CREDIT" || payment.method === "TEF_DEBIT");
+  const valid = payments.length > 0
+    && payments.every(payment => parseMoney(payment.amount) > 0)
+    && balance === 0
+    && (!hasTef || payments.length === 1);
 
   if (!open) return null;
 
   function updatePayment(id: string, patch: Partial<DraftPayment>) {
-    setPayments(current => current.map(payment => payment.id === id ? { ...payment, ...patch } : payment));
+    setPayments(current => {
+      const updated = current.map(payment => payment.id === id ? { ...payment, ...patch } : payment);
+      if (patch.method === "TEF_CREDIT" || patch.method === "TEF_DEBIT") {
+        const selected = updated.find(payment => payment.id === id)!;
+        return [{ ...selected, amount: moneyInput(total), installments: patch.method === "TEF_CREDIT" ? 1 : undefined }];
+      }
+      return updated;
+    });
   }
 
   function addPayment() {
@@ -108,7 +120,11 @@ export function TablePaymentModal({ open, total, submitting, error, onClose, onC
 
   function submit() {
     if (!valid || submitting) return;
-    onConfirm(payments.map(payment => ({ method: payment.method, amount: parseMoney(payment.amount) })));
+    onConfirm(payments.map(payment => ({
+      method: payment.method,
+      amount: parseMoney(payment.amount),
+      installments: payment.method === "TEF_CREDIT" ? payment.installments ?? 1 : undefined
+    })));
   }
 
   return (
@@ -143,6 +159,20 @@ export function TablePaymentModal({ open, total, submitting, error, onClose, onC
                     ))}
                   </select>
                 </label>
+                {payment.method === "TEF_CREDIT" && (
+                  <label>
+                    <span>Parcelas</span>
+                    <select
+                      value={payment.installments ?? 1}
+                      disabled={submitting}
+                      onChange={event => updatePayment(payment.id, { installments: Number(event.target.value) })}
+                    >
+                      {Array.from({ length: 12 }, (_, index) => index + 1).map(value => (
+                        <option key={value} value={value}>{value}x</option>
+                      ))}
+                    </select>
+                  </label>
+                )}
                 <label>
                   <span>Valor</span>
                   <input
@@ -169,7 +199,7 @@ export function TablePaymentModal({ open, total, submitting, error, onClose, onC
           <button
             className="button button--soft table-payment-add"
             onClick={addPayment}
-            disabled={submitting || payments.length >= 10 || total <= 0}
+            disabled={submitting || payments.length >= 10 || total <= 0 || hasTef}
           >
             <Plus size={17} /> Adicionar outra forma
           </button>
@@ -180,6 +210,12 @@ export function TablePaymentModal({ open, total, submitting, error, onClose, onC
               <dt>Saldo</dt><dd>{formatCurrency(Math.abs(balance))}{balance < 0 ? " excedente" : ""}</dd>
             </div>
           </dl>
+
+          {hasTef && (
+            <p className="tef-payment-notice">
+              O cartão será processado pelo TEF. Aguarde a confirmação antes de fechar ou repetir a operação.
+            </p>
+          )}
 
           {error && <div className="tables-action-error" role="alert"><span>{error}</span></div>}
         </div>

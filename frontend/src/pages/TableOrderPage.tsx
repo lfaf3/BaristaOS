@@ -63,6 +63,7 @@ export function TableOrderPage() {
   const [closingOrder, setClosingOrder] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [payingOrder, setPayingOrder] = useState(false);
+  const [tefIdempotencyKey, setTefIdempotencyKey] = useState<string | null>(null);
   const [releasingTable, setReleasingTable] = useState(false);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [cancellingOrder, setCancellingOrder] = useState(false);
@@ -213,13 +214,48 @@ export function TableOrderPage() {
     }
   }
 
-  async function handlePayment(payments: Array<{ method: OrderPaymentMethod; amount: number }>) {
+  function isTefPaymentMethod(method: OrderPaymentMethod): method is "TEF_CREDIT" | "TEF_DEBIT" {
+    return method === "TEF_CREDIT" || method === "TEF_DEBIT";
+  }
+
+  async function handlePayment(payments: Array<{ method: OrderPaymentMethod; amount: number; installments?: number }>) {
     if (!data?.order || payingOrder) return;
 
     setPayingOrder(true);
     setActionError(null);
     try {
-      const updated = await ordersService.pay(data.order.id, payments);
+      const [singlePayment] = payments;
+
+      if (payments.length === 1 && singlePayment && isTefPaymentMethod(singlePayment.method)) {
+        const idempotencyKey = tefIdempotencyKey ?? crypto.randomUUID();
+        if (!tefIdempotencyKey) setTefIdempotencyKey(idempotencyKey);
+        const result = await ordersService.startTef(data.order.id, {
+          method: singlePayment.method,
+          amount: singlePayment.amount,
+          installments: singlePayment.installments,
+          idempotencyKey
+        });
+
+        if (result.transaction.status !== "CONFIRMED" || !result.order) {
+          if (["DECLINED", "FAILED", "CANCELLED"].includes(result.transaction.status)) {
+            setTefIdempotencyKey(crypto.randomUUID());
+          }
+          const fallback = result.transaction.status === "DECLINED"
+            ? "Transação recusada. Escolha outra forma de pagamento."
+            : result.transaction.status === "UNKNOWN"
+              ? "O resultado da transação é incerto. Não repita a cobrança; consulte novamente esta operação."
+              : "A transação TEF não foi confirmada.";
+          throw new Error(result.transaction.errorMessage ?? fallback);
+        }
+
+        setData(result.order);
+        setPaymentModalOpen(false);
+        setTefIdempotencyKey(null);
+        toast.success("Pagamento TEF confirmado e venda fechada com sucesso.");
+        return;
+      }
+
+      const updated = await ordersService.pay(data.order.id, payments.map(({ method, amount }) => ({ method, amount })));
       setData(updated);
       setPaymentModalOpen(false);
       toast.success("Pagamento registrado com sucesso.");
@@ -574,7 +610,7 @@ export function TableOrderPage() {
                   ) : isPayment ? (
                     <button
                       className="button button--success order-close-button"
-                      onClick={() => { setActionError(null); setPaymentModalOpen(true); }}
+                      onClick={() => { setActionError(null); setTefIdempotencyKey(crypto.randomUUID()); setPaymentModalOpen(true); }}
                     >
                       <CircleDollarSign size={18} />
                       Receber pagamento

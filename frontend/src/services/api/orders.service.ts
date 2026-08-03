@@ -3,6 +3,23 @@ import { apiRequest } from "./http-client";
 
 interface TableOrderApiResponse extends TableOrder {}
 
+export type TefTransactionStatus = "PENDING" | "PROCESSING" | "AUTHORIZED" | "CONFIRMED" | "DECLINED" | "CANCELLED" | "FAILED" | "UNKNOWN";
+
+interface TefTransactionResponse {
+  transaction: {
+    id: string;
+    provider: string;
+    method: "TEF_CREDIT" | "TEF_DEBIT";
+    status: TefTransactionStatus;
+    amount: number;
+    nsu: string | null;
+    authorizationCode: string | null;
+    cardBrand: string | null;
+    errorMessage: string | null;
+  };
+  order: TableOrder | null;
+}
+
 export const ordersService = {
   getByTable(tableId: string): Promise<TableOrder> {
     return apiRequest<TableOrderApiResponse>({
@@ -53,6 +70,22 @@ export const ordersService = {
       method: "POST",
       url: `/orders/${orderId}/payments`,
       data: { payments }
+    });
+  },
+
+  startTef(
+    orderId: string,
+    input: {
+      method: "TEF_CREDIT" | "TEF_DEBIT";
+      amount: number;
+      installments?: number;
+      idempotencyKey: string;
+    }
+  ): Promise<TefTransactionResponse> {
+    return apiRequest<TefTransactionResponse>({
+      method: "POST",
+      url: `/orders/${orderId}/tef/transactions`,
+      data: input
     });
   },
 

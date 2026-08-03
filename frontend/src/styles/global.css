@@ -1416,6 +1416,9 @@ h1, h2, h3 { letter-spacing: -0.045em; }
 .transaction-log-wrap th, .transaction-log-wrap td { padding: 11px 12px; border-bottom: 1px solid var(--line); text-align: left; font-size: 13px; }
 .transaction-log-wrap th { color: var(--muted); font-size: 11px; text-transform: uppercase; }
 .transaction-log-empty { margin: 0; color: var(--muted); }
+.transaction-log-pagination { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding-top: 16px; color: var(--muted); font-size: 13px; }
+.transaction-log-pagination > div { display: flex; align-items: center; gap: 10px; }
+@media (max-width: 650px) { .transaction-log-pagination { flex-direction: column; align-items: stretch; text-align: center; } .transaction-log-pagination > div { justify-content: center; flex-wrap: wrap; } }
 @media (max-width: 650px) { .payment-provider-options { grid-template-columns: 1fr; } }
 
 

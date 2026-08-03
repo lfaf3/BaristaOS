@@ -7,7 +7,8 @@ export interface PaymentEvent { timestamp: string; status: PaymentStatus; messag
 export interface PaymentSession { sessionId: string; saleId: string; provider: string; status: PaymentStatus; amount: number; timeoutSeconds: PaymentTimeoutSeconds; startedAt: string; finishedAt: string | null; lastEvent: PaymentEvent; events: PaymentEvent[]; }
 export interface PaymentResponse { transactionId: string; provider: string; status: PaymentStatus; authorizationCode: string | null; message: string; session: PaymentSession; }
 export interface PaymentTransaction extends PaymentResponse { id: string; amount: number; createdAt: string; updatedAt: string; events: PaymentEvent[]; }
-export interface PaymentTransactionLog { date: string; time: string; sessionId: string; provider: string; amount: number; status: PaymentStatus; durationMs: number; }
+export interface PaymentTransactionLog { date: string; time: string; sessionId: string; provider: string; amount: number; status: string; durationMs: number; }
+export interface PaymentTransactionLogPage { items: PaymentTransactionLog[]; pagination: { page: number; pageSize: number; total: number; totalPages: number }; }
 export type PaymentProgressListener = (response: PaymentResponse) => void;
 export type MockFailureMode = "DECLINED" | "CANCELLED" | "TIMEOUT" | "COMMUNICATION_LOST";
 
@@ -18,7 +19,7 @@ const SEQUENCE_KEY = "baristaos.payment.mock-sequence.v1";
 const MIN_STATE_DELAY_MS = 300;
 const MAX_STATE_DELAY_MS = 800;
 
-class PaymentService {
+export class PaymentService {
   private readonly transactions = new Map<string, PaymentTransaction>();
   private readonly sessions = new Map<string, PaymentSession>();
   private sequence = this.loadSequence();
@@ -57,7 +58,16 @@ class PaymentService {
   configureFailure(mode: MockFailureMode | null) { this.failureMode = mode; }
   getSettings(): PaymentSettings { return { ...this.settings }; }
   updateSettings(settings: PaymentSettings) { this.settings = { ...settings, retryAttempts: Math.max(0, Math.trunc(settings.retryAttempts)) }; localStorage.setItem(SETTINGS_KEY, JSON.stringify(this.settings)); return this.getSettings(); }
-  getTransactionLogs(): PaymentTransactionLog[] { try { return JSON.parse(localStorage.getItem(LOG_KEY) ?? "[]") as PaymentTransactionLog[]; } catch { return []; } }
+  getLocalTransactionLogs(): PaymentTransactionLog[] { try { return JSON.parse(localStorage.getItem(LOG_KEY) ?? "[]") as PaymentTransactionLog[]; } catch { return []; } }
+  async getTransactionLogs(page = 1, pageSize = 15): Promise<PaymentTransactionLogPage> {
+    const result = await apiRequest<PaymentTransactionLogPage>({ method: "GET", url: "/orders/tef/transactions", params: { page, pageSize } });
+    if (result.pagination.total > 0) return result;
+    const localLogs = this.getLocalTransactionLogs();
+    return {
+      items: localLogs.slice((page - 1) * pageSize, page * pageSize),
+      pagination: { page, pageSize, total: localLogs.length, totalPages: Math.max(1, Math.ceil(localLogs.length / pageSize)) }
+    };
+  }
 
   private createSession(saleId: string, transactionId: string, amount: number): PaymentSession {
     const timestamp = new Date().toISOString();
@@ -87,11 +97,11 @@ class PaymentService {
   }
   private withTimeout(transactionId: string, operation: Promise<PaymentResponse>, listener?: PaymentProgressListener) { let handle = 0; const timeout = new Promise<PaymentResponse>(resolve => { handle = window.setTimeout(() => resolve(this.emit(transactionId, "TIMEOUT", `O PinPad não respondeu em ${this.settings.timeout} segundos. Verifique o dispositivo e tente novamente.`, listener)), this.settings.timeout * 1000); }); return Promise.race([operation, timeout]).finally(() => window.clearTimeout(handle)); }
   private loadSettings(): PaymentSettings { try { return { ...DEFAULT_PAYMENT_SETTINGS, ...JSON.parse(localStorage.getItem(SETTINGS_KEY) ?? "{}") }; } catch { return { ...DEFAULT_PAYMENT_SETTINGS }; } }
-  private writeTransactionLog(session: PaymentSession) { if (!this.settings.logTransactions || !session.finishedAt) return; const logs = this.getTransactionLogs(); if (logs.some(log => log.sessionId === session.sessionId)) return; const finishedAt = new Date(session.finishedAt); logs.unshift({ date: finishedAt.toLocaleDateString("pt-BR"), time: finishedAt.toLocaleTimeString("pt-BR"), sessionId: session.sessionId, provider: session.provider, amount: session.amount, status: session.status, durationMs: Math.max(0, finishedAt.getTime() - new Date(session.startedAt).getTime()) }); localStorage.setItem(LOG_KEY, JSON.stringify(logs.slice(0, 500))); }
+  private writeTransactionLog(session: PaymentSession) { if (!this.settings.logTransactions || !session.finishedAt) return; const logs = this.getLocalTransactionLogs(); if (logs.some(log => log.sessionId === session.sessionId)) return; const finishedAt = new Date(session.finishedAt); logs.unshift({ date: finishedAt.toLocaleDateString("pt-BR"), time: finishedAt.toLocaleTimeString("pt-BR"), sessionId: session.sessionId, provider: session.provider, amount: session.amount, status: session.status, durationMs: Math.max(0, finishedAt.getTime() - new Date(session.startedAt).getTime()) }); localStorage.setItem(LOG_KEY, JSON.stringify(logs.slice(0, 500))); }
   private requireSession(transactionId: string) { const session = this.sessions.get(transactionId); if (!session) throw new Error("Sessão de pagamento não encontrada."); return session; }
   private loadSequence() {
     const stored = Number(localStorage.getItem(SEQUENCE_KEY));
-    const highestLogged = this.getTransactionLogs().reduce((highest, log) => {
+    const highestLogged = this.getLocalTransactionLogs().reduce((highest, log) => {
       const match = log.sessionId.match(/^MOCK-SESSION-(\d+)$/);
       return match ? Math.max(highest, Number(match[1])) : highest;
     }, 0);
@@ -106,3 +116,4 @@ class PaymentService {
 }
 
 export const paymentService = new PaymentService();
+import { apiRequest } from "./http-client";

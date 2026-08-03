@@ -1,13 +1,19 @@
 import type { FastifyPluginAsync } from "fastify";
-import { getTefTransaction, startTefTransaction } from "./tef.service.js";
+import { getTefTransaction, listTefTransactionLogs, startTefTransaction } from "./tef.service.js";
 import {
   startTefTransactionSchema,
+  tefTransactionLogQuerySchema,
   tefOrderParamsSchema,
   tefTransactionParamsSchema
 } from "./tef.schemas.js";
 
 export const tefRoutes: FastifyPluginAsync = async app => {
   app.addHook("preHandler", app.authenticate);
+
+  app.get("/tef/transactions", async request => {
+    const query = tefTransactionLogQuerySchema.parse(request.query);
+    return listTefTransactionLogs(app, request.user.storeId, query);
+  });
 
   app.post("/:id/tef/transactions", async (request, reply) => {
     const { id } = tefOrderParamsSchema.parse(request.params);

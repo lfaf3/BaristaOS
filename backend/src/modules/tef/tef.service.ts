@@ -3,6 +3,7 @@ import { AppError } from "../../shared/errors/app-error.js";
 import { getTefProvider } from "./providers/provider-registry.js";
 import type { TefProviderResult } from "./providers/tef-provider.js";
 import type { StartTefTransactionInput } from "./tef.schemas.js";
+import type { TefTransactionLogQuery } from "./tef.schemas.js";
 
 const activeStatuses = ["PENDING", "PROCESSING", "AUTHORIZED", "UNKNOWN"] as const;
 
@@ -232,4 +233,40 @@ export async function getTefTransaction(
   });
   if (!transaction) throw new AppError("Transação TEF não encontrada.", 404, "TEF_TRANSACTION_NOT_FOUND");
   return responseFor(app, transaction);
+}
+
+/** Audit view consumed by Configurações > Pagamentos. */
+export async function listTefTransactionLogs(app: FastifyInstance, storeId: string, query: TefTransactionLogQuery) {
+  const where = { storeId };
+  const [total, transactions] = await app.prisma.$transaction([
+    app.prisma.tefTransaction.count({ where }),
+    app.prisma.tefTransaction.findMany({
+      where,
+      orderBy: { startedAt: "desc" },
+      skip: (query.page - 1) * query.pageSize,
+      take: query.pageSize,
+      select: {
+        id: true, provider: true, amount: true, status: true, startedAt: true,
+        updatedAt: true, confirmedAt: true, cancelledAt: true
+      }
+    })
+  ]);
+
+  const items = transactions.map(transaction => {
+    const finishedAt = transaction.confirmedAt ?? transaction.cancelledAt ?? transaction.updatedAt;
+    return {
+      date: finishedAt.toLocaleDateString("pt-BR"),
+      time: finishedAt.toLocaleTimeString("pt-BR"),
+      sessionId: transaction.id,
+      provider: transaction.provider,
+      amount: Number(transaction.amount),
+      status: transaction.status,
+      durationMs: Math.max(0, finishedAt.getTime() - transaction.startedAt.getTime())
+    };
+  });
+
+  return {
+    items,
+    pagination: { page: query.page, pageSize: query.pageSize, total, totalPages: Math.max(1, Math.ceil(total / query.pageSize)) }
+  };
 }

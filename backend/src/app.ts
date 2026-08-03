@@ -20,6 +20,7 @@ import { companyRoutes } from "./modules/company/company.routes.js";
 import { inventoryRoutes } from "./modules/inventory/inventory.routes.js";
 import { purchasesRoutes } from "./modules/purchases/purchases.routes.js";
 import { purchaseReceiptsRoutes } from "./modules/purchase-receipts/purchase-receipts.routes.js";
+import { recipesRoutes } from "./modules/recipes/recipes.routes.js";
 import suppliersModule from "./modules/suppliers";
 
 export async function buildApp() {
@@ -58,6 +59,7 @@ export async function buildApp() {
   await app.register(inventoryRoutes,{prefix:"/api/v1/inventory"});
   await app.register(purchasesRoutes,{prefix:"/api/v1/purchases"});
   await app.register(purchaseReceiptsRoutes,{prefix:"/api/v1/purchases"});
+  await app.register(recipesRoutes,{prefix:"/api/v1/recipes"});
   await app.register(suppliersModule, {
   prefix: "/api/v1/suppliers",
 });

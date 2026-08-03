@@ -1,5 +1,6 @@
 import {
   Banknote,
+  BookOpen,
   Boxes,
   Grid2X2,
   LayoutDashboard,
@@ -57,6 +58,11 @@ export function Sidebar() {
           Compras
         </NavLink>
 
+        <NavLink to="/fichas-tecnicas" className={navClass}>
+          <BookOpen size={19} />
+          Fichas técnicas
+        </NavLink>
+
         <button className="nav-item" type="button" disabled>
           <Banknote size={19} />
           Caixa
@@ -69,7 +75,7 @@ export function Sidebar() {
       </nav>
 
       <div className="sidebar__footer">
-        BaristaOS v3.3.9
+        BaristaOS v3.4.0
         <br />
         Sistema para cafeterias
       </div>

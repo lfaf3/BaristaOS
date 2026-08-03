@@ -117,6 +117,7 @@ model Company {
   inventoryItems  InventoryItem[]
   suppliers       Supplier[]
   purchaseOrders  PurchaseOrder[]
+  recipes         Recipe[]
 
   @@map("companies")
 }
@@ -238,6 +239,7 @@ model Product {
   company    Company     @relation(fields: [companyId], references: [id], onDelete: Restrict)
   category   Category    @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   orderItems OrderItem[]
+  recipe     Recipe?
 
   @@unique([companyId, code])
   @@index([companyId, categoryId])
@@ -378,6 +380,7 @@ model InventoryItem {
   movements     InventoryMovement[]
   purchaseOrderItems PurchaseOrderItem[]
   purchaseReceiptItems PurchaseReceiptItem[]
+  recipeItems         RecipeItem[]
 
   @@unique([companyId, name])
   @@index([companyId, active])
@@ -417,6 +420,46 @@ model Supplier {
   @@index([corporateName])
   @@index([city])
   @@map("suppliers")
+}
+
+model Recipe {
+  id            String        @id @default(uuid()) @db.Uuid
+  companyId     String        @map("company_id") @db.Uuid
+  productId     String        @unique @map("product_id") @db.Uuid
+  name          String
+  yieldQuantity Decimal       @default(1) @map("yield_quantity") @db.Decimal(14, 3)
+  yieldUnit     InventoryUnit @default(UNIT) @map("yield_unit")
+  notes         String?
+  active        Boolean       @default(true)
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  company Company      @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  product Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  items   RecipeItem[]
+
+  @@index([companyId, active])
+  @@index([companyId, name])
+  @@map("recipes")
+}
+
+model RecipeItem {
+  id              String   @id @default(uuid()) @db.Uuid
+  recipeId        String   @map("recipe_id") @db.Uuid
+  inventoryItemId String   @map("inventory_item_id") @db.Uuid
+  quantity        Decimal  @db.Decimal(14, 3)
+  wastePercent    Decimal  @default(0) @map("waste_percent") @db.Decimal(5, 2)
+  sortOrder       Int      @default(0) @map("sort_order")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  recipe        Recipe        @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+
+  @@unique([recipeId, inventoryItemId])
+  @@index([recipeId, sortOrder])
+  @@index([inventoryItemId])
+  @@map("recipe_items")
 }
 
 model InventoryMovement {

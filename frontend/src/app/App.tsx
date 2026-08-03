@@ -16,6 +16,7 @@ import { CompanyPage } from "../pages/CompanyPage";
 import { InventoryPage } from "../pages/InventoryPage";
 import SuppliersPage from "../pages/SuppliersPage";
 import { PurchasesPage } from "../pages/PurchasesPage";
+import { RecipesPage } from "../pages/RecipesPage";
 
 export function App() {
   return (
@@ -39,6 +40,7 @@ export function App() {
                 <Route path="/estoque" element={<InventoryPage />} />
                 <Route path="/fornecedores" element={<SuppliersPage />} />
                 <Route path="/compras" element={<PurchasesPage />} />
+                <Route path="/fichas-tecnicas" element={<RecipesPage />} />
               </Route>
 
               <Route path="/" element={<Navigate to="/login" replace />} />
